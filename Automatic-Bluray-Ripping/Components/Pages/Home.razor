@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @using MediaInfo;
 @using MediaInfo.Model;
+@inject NavigationManager Nav
 
 <PageTitle>Home</PageTitle>
 
@@ -46,36 +47,31 @@
 	</div>
 
 	<div>
-		<button style="width: 300px; height: 200px;">
+		<button style="width: 300px; height: 100px;" onclick="@GoToTranscode">
 			Next
-</button>
+		</button>
 	</div>
 </div>
 
 @foreach (var category in VideoCategories.Keys)
 {
-	<details>
+	<details style="background-color: darkgray; padding: 10px; border-radius: 10px; margin: 10px">
 		<summary>
 			<input type="checkbox"
 				   class="form-check-input"
 				   id="include"
-				   checked="@UseVideo"
-				   
-				   />
+				   checked="@VideoCategories[category].IsSelected" />
 
-
-			Videos : @VideoCategories[category].Count (Category : @category)
+			<input value="@VideoCategories[category].Name" />
+			(@VideoCategories[category].Metadata.Count Videos)
 		</summary>
 
 		<div style="background-color: red;">
-
-			@foreach (var metadata in VideoCategories[category])
+			@foreach (var metadata in VideoCategories[category].Metadata)
 			{
 				<VideoFile Metadata="@metadata" />
 			}
-
 		</div>
-
 	</details>
 }
 
@@ -88,14 +84,14 @@
 
 	private string directoryPath = "Blurays";
 
-	private string mkvDir = @"D:\NanoDNA Studios\Development\Automatic-Bluray-Ripping\Automatic-Bluray-Ripping\bin\Debug\net8.0\Blurays\Fairy_Tail_Extract";
+	private string mkvDir = @"D:\NanoDNA Studios\Development\Automatic-Bluray-Ripping\Automatic-Bluray-Ripping\bin\Debug\net8.0\Blurays\Fairy_Tail_Extract_2";
 	private string mkvFile = @"D:\NanoDNA Studios\Development\Automatic-Bluray-Ripping\Automatic-Bluray-Ripping\bin\Debug\net8.0\Blurays\Fairy_Tail_Extract\FairyTail Part15 Disc 2_t02.mkv";
 
 	private string[] MKVFiles = [];
 
 	private VideoMetadata[] Metadata;
 
-	private Dictionary<string, List<VideoMetadata>> VideoCategories = new Dictionary<string, List<VideoMetadata>>();
+	private Dictionary<string, VideoCategory> VideoCategories = new Dictionary<string, VideoCategory>();
 
 	private bool UseVideo = true;
 	private bool UseAudio = true;
@@ -107,7 +103,7 @@
 		Console.WriteLine("Starting Program...");
 		Console.WriteLine(exeDir);
 
-		VideoCategories = new Dictionary<string, List<VideoMetadata>>();
+		VideoCategories = new Dictionary<string, VideoCategory>();
 		Metadata = GetVideoMetadata(mkvDir);
 
 		ComputeCategories();
@@ -157,19 +153,25 @@
 	private void ComputeCategories()
 	{
 		Console.WriteLine("Computing");
-		Dictionary<string, List<VideoMetadata>> videoCategories = new Dictionary<string, List<VideoMetadata>>();
+		Dictionary<string, VideoCategory> videoCategories = new Dictionary<string, VideoCategory>();
+
+		int index = 1;
+
 
 		foreach (VideoMetadata metadata in Metadata)
 		{
 			//Add buttons that control the bools
 			string signature = metadata.GetSignature(UseVideo, UseAudio, UseSubtitles, UseChapters);
 
-			Console.WriteLine(signature);
+			//Console.WriteLine(signature);
 
 			if (!videoCategories.ContainsKey(signature))
-				videoCategories.Add(signature, new List<VideoMetadata>());
+			{
+				videoCategories.Add(signature, new VideoCategory($"Category {index}"));
+				index++;
+			}
 
-			videoCategories[signature].Add(metadata);
+			videoCategories[signature].AddMetadata(metadata);
 		}
 
 		VideoCategories = videoCategories;
@@ -239,6 +241,11 @@
 		}
 
 		return metadata.ToArray();
+	}
+
+	private void GoToTranscode()
+	{
+		Nav.NavigateTo("/transcode");
 	}
 
 	private void DisplayMediaInfo(string filePath)

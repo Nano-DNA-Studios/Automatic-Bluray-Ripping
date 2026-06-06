@@ -24,81 +24,100 @@
 		</div>
 	</div>
 
-	@if (Metadata.VideoStreams.Length > 1)
-	{
-		<h3>Video Info</h3>
+	<div style="display: flex; flex-direction: row; justify-content: flex-start; padding: 10px; gap: 40px; ">
 
-		@foreach (VideoStreamItem videoStream in Metadata.VideoStreams)
+		@if (Metadata.VideoStreams.Length > 1)
 		{
-			<div style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px; background-color: aqua;">
+			<div style="background-color: gray; border-radius: 10px; padding: 20px;">
 
-				<h5>ID : @videoStream.ID</h5>
-				<h5>Resolution : @videoStream.Width x @videoStream.Height (@videoStream.FrameRate fps)</h5>
-				<h5>Codec : @videoStream.CodecName / @videoStream.Format</h5>
-				<h5>Duration : @videoStream.Duration</h5>
+				<h3>Video Info</h3>
+
+				@foreach (VideoStreamItem videoStream in Metadata.VideoStreams)
+				{
+					<div style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px; background-color: aqua;">
+
+						<h5>ID : @videoStream.ID</h5>
+						<h5>Resolution : @videoStream.Width x @videoStream.Height (@videoStream.FrameRate fps)</h5>
+						<h5>Codec : @videoStream.CodecName / @videoStream.Format</h5>
+						<h5>Duration : @videoStream.Duration</h5>
+
+					</div>
+				}
 
 			</div>
 		}
-	}
 
-	@if (Metadata.AudioStreams.Length > 1)
-	{
-		<details>
-			<summary>
-				<h3>Audio Info (@Metadata.AudioStreams.Length Tracks)</h3>
-			</summary>
+		@if (Metadata.AudioStreams.Length > 1)
+		{
+			<div style="background-color: gray; border-radius: 10px; padding: 20px;">
 
-			@foreach (AudioStreamItem audioStream in Metadata.AudioStreams)
-			{
-				<div style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px; background-color: aqua;">
+				<details>
+					<summary>
+						<h3>Audio Info (@Metadata.AudioStreams.Length Tracks)</h3>
+					</summary>
 
-					<h5>ID : @audioStream.ID</h5>
-					<h5>Format : @audioStream.Format</h5>
-					<h5>Channels : @audioStream.Channels</h5>
-					<h5>Language : @audioStream.Language</h5>
-					<h5>Bitrate : @audioStream.Bitrate bps</h5>
-				</div>
-			}
-		</details>
-	}
+					@foreach (AudioStreamItem audioStream in Metadata.AudioStreams)
+					{
+						<div style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px; background-color: aqua;">
 
-	@if (Metadata.SubtitleStreams.Length > 1)
-	{
-		<details>
-			<summary>
-				<h3>Subtitle Info (@Metadata.SubtitleStreams.Length Tracks)</h3>
-			</summary>
+							<h5>ID : @audioStream.ID</h5>
+							<h5>Format : @audioStream.Format</h5>
+							<h5>Channels : @audioStream.Channels</h5>
+							<h5>Language : @audioStream.Language</h5>
+							<h5>Bitrate : @audioStream.Bitrate bps</h5>
+						</div>
+					}
+				</details>
 
-			@foreach (SubtitleStreamItem subtitleStream in Metadata.SubtitleStreams)
-			{
-				<div style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px; background-color: aqua;">
+			</div>
+		}
 
-					<h5>ID : @subtitleStream.ID</h5>
-					<h5>Format : @subtitleStream.Format</h5>
-					<h5>Language : @subtitleStream.Language</h5>
-				</div>
-			}
-		</details>
-	}
 
-	@if (Metadata.ChapterStreams.Length > 1)
-	{
-		<details>
-			<summary>
-				<h3>Chapter Info (@Metadata.ChapterStreams.Length Tracks)</h3>
-			</summary>
+		@if (Metadata.SubtitleStreams.Length > 1)
+		{
+			<div style="background-color: gray; border-radius: 10px; padding: 20px;">
 
-			@foreach (ChapterStreamItem chapterStream in Metadata.ChapterStreams)
-			{
-				<div style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px; background-color: aqua;">
+				<details>
+					<summary>
+						<h3>Subtitle Info (@Metadata.SubtitleStreams.Length Tracks)</h3>
+					</summary>
 
-					<h5>ID : @chapterStream.ID</h5>
-					<h5>Name : @chapterStream.Name</h5>
-				</div>
-			}
-		</details>
-	}
+					@foreach (SubtitleStreamItem subtitleStream in Metadata.SubtitleStreams)
+					{
+						<div style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px; background-color: aqua;">
 
+							<h5>ID : @subtitleStream.ID</h5>
+							<h5>Format : @subtitleStream.Format</h5>
+							<h5>Language : @subtitleStream.Language</h5>
+						</div>
+					}
+				</details>
+
+			</div>
+		}
+
+		@if (Metadata.ChapterStreams.Length > 1)
+		{
+			<div style="background-color: gray; border-radius: 10px; padding: 20px;">
+
+				<details>
+					<summary>
+						<h3>Chapter Info (@Metadata.ChapterStreams.Length Tracks)</h3>
+					</summary>
+
+					@foreach (ChapterStreamItem chapterStream in Metadata.ChapterStreams)
+					{
+						<div style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px; background-color: aqua;">
+
+							<h5>ID : @chapterStream.ID</h5>
+							<h5>Name : @chapterStream.Name</h5>
+						</div>
+					}
+				</details>
+
+			</div>
+		}
+	</div>
 </div>
 
 @code {

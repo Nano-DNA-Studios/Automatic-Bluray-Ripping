@@ -80,7 +80,6 @@ namespace Automatic_Bluray_Ripping
             AudioStreams = audioStreams.ToArray();
             SubtitleStreams = subtitleStreams.ToArray();
             ChapterStreams = chapterStreams.ToArray();
-
         }
 
         public string GetSignature(bool useVideo, bool useAudio, bool useSubtitles, bool useChapters)
@@ -245,7 +244,6 @@ namespace Automatic_Bluray_Ripping
         {
             return $"[{ID} | {Format} | {Language}]";
         }
-
     }
 
     public class ChapterStreamItem
@@ -277,5 +275,4 @@ namespace Automatic_Bluray_Ripping
         /// </summary>
 
     }
-
 }
