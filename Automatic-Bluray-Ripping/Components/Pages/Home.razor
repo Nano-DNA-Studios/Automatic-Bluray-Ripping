@@ -1,7 +1,96 @@
 ﻿@page "/"
+@rendermode InteractiveServer
 
 <PageTitle>Home</PageTitle>
 
 <h1>Hello, world!</h1>
 
 Welcome to your new app.
+
+@code {
+
+	string exeDir = Path.GetDirectoryName(Environment.ProcessPath);
+
+	private const string BDMV = "BDMV";
+	private const string STREAM = "STREAM";
+
+	private string directoryPath = "Blurays";
+
+	protected override async Task OnInitializedAsync()
+	{
+		Console.WriteLine("Starting Program...");
+		Console.WriteLine(exeDir);
+
+		directoryPath = Path.Combine(exeDir, directoryPath);
+
+		if (!Directory.Exists(directoryPath))
+		{
+			Console.WriteLine("Directory Doesn't Exist");
+			return;
+		}
+
+		string[] dirs = Directory.EnumerateDirectories(directoryPath).ToArray();
+
+		foreach (string dir in dirs)
+		{
+			Console.WriteLine($"Exploring Directory {dir}...");
+
+			if (!IsBlurayBackup(dir))
+			{
+				//Just read the Files / find all video files? (Search for .mkv only?)
+				Console.WriteLine("The Directory is not a Bluray");
+				continue;
+			}
+
+			Console.WriteLine($"The Directory {dir} is a Bluray");
+
+			foreach (string file in GetAllBlurayVideoFiles(GetBlurayStreamDir(dir)))
+				Console.WriteLine(file);
+		}
+	}
+
+	private bool IsBlurayBackup(string basePath)
+	{
+		string fullPath = basePath;
+		string[] dirs;
+
+		if (!Directory.Exists(fullPath))
+			return false;
+
+		dirs = Directory.GetDirectories(fullPath);
+
+		if (!dirs.Contains(Path.Combine(fullPath, BDMV)))
+		{
+			Console.WriteLine("No BDMV Folder");
+			return false;
+		}
+
+		fullPath = Path.Combine(fullPath, BDMV);
+
+		if (!Directory.Exists(fullPath))
+			return false;
+
+		dirs = Directory.GetDirectories(fullPath);
+
+		if (!dirs.Contains(Path.Combine(fullPath, STREAM)))
+		{
+			Console.WriteLine("No STREAM Folder");
+			return false;
+		}
+
+		return true;
+	}
+
+	private string GetBlurayStreamDir(string basePath)
+	{
+		return Path.Combine(basePath, BDMV, STREAM);
+	}
+
+	private string[] GetAllBlurayVideoFiles(string streamPath)
+	{
+		const string extension = "*.m2ts";
+
+		return Directory.GetFiles(streamPath, extension);
+	}
+
+}
