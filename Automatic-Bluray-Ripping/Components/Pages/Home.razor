@@ -1,11 +1,18 @@
 ﻿@page "/"
 @rendermode InteractiveServer
+@using MediaInfo;
+@using MediaInfo.Model;
 
 <PageTitle>Home</PageTitle>
 
 <h1>Hello, world!</h1>
 
 Welcome to your new app.
+
+@foreach (var file in MKVFiles)
+{
+	<VideoFile FilePath="@file"/>
+}
 
 @code {
 
@@ -15,6 +22,12 @@ Welcome to your new app.
 	private const string STREAM = "STREAM";
 
 	private string directoryPath = "Blurays";
+
+	private string mkvDir = @"D:\NanoDNA Studios\Development\Automatic-Bluray-Ripping\Automatic-Bluray-Ripping\bin\Debug\net8.0\Blurays\Fairy_Tail_Extract";
+	private string mkvFile = @"D:\NanoDNA Studios\Development\Automatic-Bluray-Ripping\Automatic-Bluray-Ripping\bin\Debug\net8.0\Blurays\Fairy_Tail_Extract\FairyTail Part15 Disc 2_t02.mkv";
+
+	private string[] MKVFiles = [];
+
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -44,8 +57,18 @@ Welcome to your new app.
 
 			Console.WriteLine($"The Directory {dir} is a Bluray");
 
-			foreach (string file in GetAllBlurayVideoFiles(GetBlurayStreamDir(dir)))
-				Console.WriteLine(file);
+			// foreach (string file in GetAllBlurayVideoFiles(GetBlurayStreamDir(dir)))
+			// {
+			// 	DisplayMediaInfo(file);
+			// }
+
+			MKVFiles = GetAllMKVFiles(mkvDir);
+
+			foreach (string file in GetAllMKVFiles(mkvDir))
+			{
+				DisplayMediaInfo(file);
+			}
+			//DisplayMediaInfo(mkvFile);
 		}
 	}
 
@@ -91,6 +114,67 @@ Welcome to your new app.
 		const string extension = "*.m2ts";
 
 		return Directory.GetFiles(streamPath, extension);
+	}
+
+	private string[] GetAllMKVFiles(string mkvDir)
+	{
+		const string extension = "*.mkv";
+
+		return Directory.GetFiles(mkvDir, extension);
+	}
+
+	private void DisplayMediaInfo(string filePath)
+	{
+		Console.WriteLine($"Analyzing File : {filePath}");
+
+		try
+		{
+
+			MediaInfoWrapper mediaFile = new MediaInfoWrapper(filePath);
+
+			// 1. General Container Metadata
+			Console.WriteLine($"Size: {mediaFile.Size} bytes");
+			Console.WriteLine($"Duration: {TimeSpan.FromMilliseconds(mediaFile.Duration):hh\\:mm\\:ss}");
+			Console.WriteLine($"Total Bitrate: {mediaFile.VideoRate} bps");
+
+			// 2. Video Track Details
+			foreach (var video in mediaFile.VideoStreams)
+			{
+				Console.WriteLine($"[Video Track #{video.Id}]");
+				Console.WriteLine($"  Codec: {video.CodecName} / {video.Format}");
+				Console.WriteLine($"  Profile: {video.CodecProfile}");
+				Console.WriteLine($"  Resolution: {video.Width}x{video.Height}");
+				Console.WriteLine($"  Framerate: {video.FrameRate} FPS");
+				Console.WriteLine($"  Bitrate: {video.Bitrate} bps");
+			}
+
+			// 3. Audio Track Details
+			foreach (var audio in mediaFile.AudioStreams)
+			{
+				Console.WriteLine($"[Audio Track #{audio.Id} ({audio.Name})]");
+				Console.WriteLine($"  Format: {audio.Format} ({audio.CodecName}, {audio.CodecFriendly})");
+				Console.WriteLine($"  Channels: {audio.Channel} ({audio.StreamPosition})");
+				Console.WriteLine($"  Language: {audio.Language} ({audio.LanguageIetf})");
+				Console.WriteLine($"  Bitrate: {audio.Bitrate} bps");
+
+
+			}
+
+			// 4. Subtitle Track Details
+			foreach (var subtitle in mediaFile.Subtitles)
+			{
+				Console.WriteLine($"[Subtitle Track #{subtitle.Id} ({subtitle.Name})]");
+				Console.WriteLine($"  Format: {subtitle.Format}");
+				Console.WriteLine($"  Language: {subtitle.Language} ({subtitle.LanguageIetf})");
+				Console.WriteLine($"  Default: {subtitle.Default}");
+			}
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Error reading metadata for {Path.GetFileName(filePath)}: {ex.Message}");
+		}
+
+		Console.WriteLine("Done Analyzing... \n\n");
 	}
 
 }
