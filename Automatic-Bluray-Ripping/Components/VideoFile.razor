@@ -4,26 +4,30 @@
 
 <div style="margin: 10px; background-color: lightgreen;">
 	<div>
-		<h2>@Name</h2>
-		<p>@FilePath</p>
+		<h2>@Metadata.Name</h2>
+		<p>@Metadata.FilePath</p>
+	</div>
+
+	<div>
+		<img src="@ThumbnailBase64" alt="Video Thumbnail" style="width: 400px; height: auto; border-radius: 4px;" />
 	</div>
 
 	<h3>Video Info</h3>
 
-	@foreach (VideoStreamItem videoStream in VideoStreams)
+	@foreach (VideoStreamItem videoStream in Metadata.VideoStreams)
 	{
 		<div style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px; background-color: aqua;">
 			
-			<h5>@videoStream.ID</h5>
-			<h5>@videoStream.Resolution</h5>
-			<h5>@videoStream.FrameRate</h5>
-			<h5>@videoStream.VideoCodec</h5>
+			<h5>ID : @videoStream.ID</h5>
+			<h5>Resolution : @videoStream.Width x @videoStream.Height</h5>
+			<h5>Framerate : @videoStream.FrameRate fps</h5>
+			<h5>Codec : @videoStream.CodecName / @videoStream.Format</h5>
 		</div>
 	}
 
 	<h3>Audio Info</h3>
 
-	@foreach (AudioStreamItem audioStream in AudioStreams)
+	@foreach (AudioStreamItem audioStream in Metadata.AudioStreams)
 	{
 		<div style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px; background-color: aqua;">
 			
@@ -37,7 +41,7 @@
 
 	<h3>Subtitle Info</h3>
 
-	@foreach (SubtitleStreamItem subtitleStream in SubtitleStreams)
+	@foreach (SubtitleStreamItem subtitleStream in Metadata.SubtitleStreams)
 	{
 		<div style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px; background-color: aqua;">
 
@@ -49,7 +53,7 @@
 
 	<h3>Chapter Info</h3>
 
-	@foreach (ChapterStreamItem chapterStream in ChapterStreams)
+	@foreach (ChapterStreamItem chapterStream in Metadata.ChapterStreams)
 	{
 		<div style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px; background-color: aqua;">
 
@@ -63,109 +67,12 @@
 @code {
 
 	[Parameter]
-	public string FilePath { get; set; } = "";
+	public VideoMetadata Metadata { get; set; } = new VideoMetadata("");
 
-	public string Name { get; set; } = "";
-
-	public string Duration { get; set; } = "";
-
-	VideoStreamItem[] VideoStreams = [];
-	AudioStreamItem[] AudioStreams = [];
-	SubtitleStreamItem[] SubtitleStreams = [];
-	ChapterStreamItem[] ChapterStreams = [];
+	string ThumbnailBase64 = "images/placeholder.jpg";
 
 	protected override async Task OnInitializedAsync()
 	{
-		//Parse the info and populate
-
-		MediaInfoWrapper mediaFile = new MediaInfoWrapper(FilePath);
-
-		Name = Path.GetFileName(FilePath);
-		Duration = $"{TimeSpan.FromMilliseconds(mediaFile.Duration):hh\\:mm\\:ss}";
-
-		List<VideoStreamItem> videoStreams = new List<VideoStreamItem>();
-
-		foreach (var video in mediaFile.VideoStreams)
-		{
-			VideoStreamItem stream = new VideoStreamItem();
-			stream.ID = video.Id;
-			stream.Resolution = $"Resolution: {video.Width}x{video.Height}";
-			stream.FrameRate = $"Framerate: {video.FrameRate}";
-			stream.VideoCodec = $"Codec: {video.CodecName} / {video.Format}";
-			videoStreams.Add(stream);
-		}
-
-		List<AudioStreamItem> audioStreams = new List<AudioStreamItem>();
-
-		foreach (var audio in mediaFile.AudioStreams)
-		{
-			AudioStreamItem item = new AudioStreamItem();
-			item.ID = audio.Id;
-			item.Format = $"{audio.CodecFriendly} - {audio.Name}";
-			item.Channels = audio.Channel;
-			item.Language = audio.Language;
-			item.Bitrate = audio.Bitrate;
-			audioStreams.Add(item);
-		}
-
-		List<SubtitleStreamItem> subtitleStreams = new List<SubtitleStreamItem>();
-
-		foreach (var subtitle in mediaFile.Subtitles)
-		{
-			SubtitleStreamItem item = new SubtitleStreamItem();
-			item.ID = subtitle.Id;
-			item.Format = subtitle.Format;
-			item.Language = subtitle.Language;
-			subtitleStreams.Add(item);
-		}
-
-		List<ChapterStreamItem> chapterStreams = new List<ChapterStreamItem>();
-
-		foreach (var chapter in mediaFile.Chapters)
-		{
-			ChapterStreamItem item = new ChapterStreamItem();
-
-			item.ID = chapter.Id;
-			item.Name = chapter.Name;
-			chapterStreams.Add(item);
-		}
-
-
-		VideoStreams = videoStreams.ToArray();
-		AudioStreams = audioStreams.ToArray();
-		SubtitleStreams = subtitleStreams.ToArray();
-		ChapterStreams = chapterStreams.ToArray();
-	}
-
-	public class VideoStreamItem
-	{
-		public int ID { get; set; } = 0;
-		public string Resolution { get; set; } = "";
-		public string FrameRate { get; set; } = "";
-		public string VideoCodec { get; set; } = "";
-	}
-
-	public class AudioStreamItem
-	{
-		public int ID { get; set; } = 0;
-		public string Format { get; set; } = "";
-		public int Channels { get; set; } = 0;
-		public string Language { get; set; } = "";
-		public double Bitrate { get; set; } = 0;
-	}
-
-	public class SubtitleStreamItem
-	{
-		public int ID { get; set; } = 0;
-		public string Format { get; set; } = "";
-		public string Language { get; set; } = "";
-	}
-
-	public class ChapterStreamItem
-	{
-		public int ID { get; set; } = 0;
-		public string Name { get; set; } = "";
-		public string Format { get; set; } = "";
-		public string Language { get; set; } = "";
+		ThumbnailBase64 = await Metadata.ExtractThumbnailToBase64Async();
 	}
 }

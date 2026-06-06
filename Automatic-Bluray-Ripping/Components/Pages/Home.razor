@@ -5,14 +5,61 @@
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="form-check m-3">
+	<input type="checkbox"
+		   class="form-check-input"
+		   id="useVideo"
+		   checked="@UseVideo"
+		   @onchange="(e) => { UseVideo = (bool)(e.Value ?? false); RecomputeCategories(e); }" />
+	<label class="form-check-label" for="useVideo">Include Video Streams</label>
+</div>
 
-Welcome to your new app.
+<div class="form-check m-3">
+	<input type="checkbox"
+		   class="form-check-input"
+		   id="useAudio"
+		   checked="@UseAudio"
+		   @onchange="(e) => { UseAudio = (bool)(e.Value ?? false); RecomputeCategories(e); }" />
+	<label class="form-check-label" for="useAudio">Include Audio Streams</label>
+</div>
 
-@foreach (var file in MKVFiles)
+<div class="form-check m-3">
+	<input type="checkbox"
+		   class="form-check-input"
+		   id="useSubtitle"
+		   checked="@UseSubtitles"
+		   @onchange="(e) => { UseSubtitles = (bool)(e.Value ?? false); RecomputeCategories(e); }" />
+	<label class="form-check-label" for="useSubtitle">Include Subtitle Streams</label>
+</div>
+
+<div class="form-check m-3">
+	<input type="checkbox"
+		   class="form-check-input"
+		   id="useChapters"
+		   checked="@UseChapters"
+		   @onchange="(e) => { UseChapters = (bool)(e.Value ?? false); RecomputeCategories(e); }" />
+	<label class="form-check-label" for="useChapters">Include Chapter Streams</label>
+</div>
+
+@foreach (var category in VideoCategories.Keys)
 {
-	<VideoFile FilePath="@file"/>
+	<details>
+		<summary>
+			Videos : @VideoCategories[category].Count (Category : @category)
+		</summary>
+
+		<div style="background-color: red;">
+
+			@foreach (var metadata in VideoCategories[category])
+			{
+				<VideoFile Metadata="@metadata" />
+			}
+
+		</div>
+
+	</details>
 }
+
 
 @code {
 
@@ -28,11 +75,24 @@ Welcome to your new app.
 
 	private string[] MKVFiles = [];
 
+	private VideoMetadata[] Metadata;
+
+	private Dictionary<string, List<VideoMetadata>> VideoCategories = new Dictionary<string, List<VideoMetadata>>();
+
+	private bool UseVideo = true;
+	private bool UseAudio = true;
+	private bool UseSubtitles = true;
+	private bool UseChapters = true;
 
 	protected override async Task OnInitializedAsync()
 	{
 		Console.WriteLine("Starting Program...");
 		Console.WriteLine(exeDir);
+
+		VideoCategories = new Dictionary<string, List<VideoMetadata>>();
+		Metadata = GetVideoMetadata(mkvDir);
+
+		ComputeCategories();
 
 		directoryPath = Path.Combine(exeDir, directoryPath);
 
@@ -62,14 +122,40 @@ Welcome to your new app.
 			// 	DisplayMediaInfo(file);
 			// }
 
-			MKVFiles = GetAllMKVFiles(mkvDir);
-
-			foreach (string file in GetAllMKVFiles(mkvDir))
-			{
-				DisplayMediaInfo(file);
-			}
+			// foreach (string file in GetAllMKVFiles(mkvDir))
+			// {
+			// 	DisplayMediaInfo(file);
+			// }
 			//DisplayMediaInfo(mkvFile);
 		}
+	}
+
+	private void RecomputeCategories(ChangeEventArgs e)
+	{
+		ComputeCategories();
+	}
+
+
+	private void ComputeCategories()
+	{
+		Console.WriteLine("Computing");
+		Dictionary<string, List<VideoMetadata>> videoCategories = new Dictionary<string, List<VideoMetadata>>();
+
+		foreach (VideoMetadata metadata in Metadata)
+		{
+			//Add buttons that control the bools
+			string signature = metadata.GetSignature(UseVideo, UseAudio, UseSubtitles, UseChapters);
+
+			Console.WriteLine(signature);
+
+			if (!videoCategories.ContainsKey(signature))
+				videoCategories.Add(signature, new List<VideoMetadata>());
+
+			videoCategories[signature].Add(metadata);
+		}
+
+		VideoCategories = videoCategories;
+
 	}
 
 	private bool IsBlurayBackup(string basePath)
@@ -121,6 +207,20 @@ Welcome to your new app.
 		const string extension = "*.mkv";
 
 		return Directory.GetFiles(mkvDir, extension);
+	}
+
+	private VideoMetadata[] GetVideoMetadata(string path)
+	{
+		List<VideoMetadata> metadata = new List<VideoMetadata>();
+		string[] MKVFiles = GetAllMKVFiles(mkvDir);
+
+
+		foreach (string mkvFile in MKVFiles)
+		{
+			metadata.Add(new VideoMetadata(mkvFile));
+		}
+
+		return metadata.ToArray();
 	}
 
 	private void DisplayMediaInfo(string filePath)
@@ -176,5 +276,9 @@ Welcome to your new app.
 
 		Console.WriteLine("Done Analyzing... \n\n");
 	}
+
+
+
+
 
 }
