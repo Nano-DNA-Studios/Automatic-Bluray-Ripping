@@ -52,7 +52,7 @@ namespace Automatic_Bluray_Ripping
 
             foreach (var video in mediaFile.VideoStreams)
             {
-                videoStreams.Add(new VideoStreamItem(video));
+                videoStreams.Add(new VideoStreamItem(video, mediaFile.Duration));
             }
 
             List<AudioStreamItem> audioStreams = new List<AudioStreamItem>();
@@ -125,7 +125,7 @@ namespace Automatic_Bluray_Ripping
                 if (TimeSpan.TryParse(this.Duration, out TimeSpan videoLength))
                 {
                     if (videoLength.TotalSeconds <= 65)
-                        timeOffset = "00:00:01";
+                        timeOffset = "00:00:02";
                 }
             }
             catch
@@ -186,14 +186,17 @@ namespace Automatic_Bluray_Ripping
 
         public string Format { get; set; }
 
-        public VideoStreamItem(VideoStream stream)
+        public string Duration { get; set; }
+
+        public VideoStreamItem(VideoStream video, int duration)
         {
-            this.ID = stream.Id;
-            this.Width = stream.Width;
-            this.Height = stream.Height;
-            this.FrameRate = stream.FrameRate;
-            this.CodecName = stream.CodecName;
-            this.Format = stream.Format;
+            this.ID = video.Id;
+            this.Width = video.Width;
+            this.Height = video.Height;
+            this.FrameRate = video.FrameRate;
+            this.CodecName = video.CodecName;
+            this.Format = video.Format;
+            this.Duration = $"{TimeSpan.FromMilliseconds(duration):hh\\:mm\\:ss}";
         }
 
         public string GetSignature()

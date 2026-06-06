@@ -5,46 +5,65 @@
 
 <PageTitle>Home</PageTitle>
 
-<div class="form-check m-3">
-	<input type="checkbox"
-		   class="form-check-input"
-		   id="useVideo"
-		   checked="@UseVideo"
-		   @onchange="(e) => { UseVideo = (bool)(e.Value ?? false); RecomputeCategories(e); }" />
-	<label class="form-check-label" for="useVideo">Include Video Streams</label>
-</div>
+<div style="display: flex; flex-direction: row; justify-content: flex-start; padding: 10px">
+	<div>
+		<div class="form-check m-3">
+			<input type="checkbox"
+				   class="form-check-input"
+				   id="useVideo"
+				   checked="@UseVideo"
+				   @onchange="(e) => { UseVideo = (bool)(e.Value ?? false); RecomputeCategories(e); }" />
+			<label class="form-check-label" for="useVideo">Sort By Video Streams</label>
+		</div>
 
-<div class="form-check m-3">
-	<input type="checkbox"
-		   class="form-check-input"
-		   id="useAudio"
-		   checked="@UseAudio"
-		   @onchange="(e) => { UseAudio = (bool)(e.Value ?? false); RecomputeCategories(e); }" />
-	<label class="form-check-label" for="useAudio">Include Audio Streams</label>
-</div>
+		<div class="form-check m-3">
+			<input type="checkbox"
+				   class="form-check-input"
+				   id="useAudio"
+				   checked="@UseAudio"
+				   @onchange="(e) => { UseAudio = (bool)(e.Value ?? false); RecomputeCategories(e); }" />
+			<label class="form-check-label" for="useAudio">Sort By Audio Streams</label>
+		</div>
+	</div>
+	<div>
+		<div class="form-check m-3">
+			<input type="checkbox"
+				   class="form-check-input"
+				   id="useSubtitle"
+				   checked="@UseSubtitles"
+				   @onchange="(e) => { UseSubtitles = (bool)(e.Value ?? false); RecomputeCategories(e); }" />
+			<label class="form-check-label" for="useSubtitle">Sort By Subtitle Streams</label>
+		</div>
 
-<div class="form-check m-3">
-	<input type="checkbox"
-		   class="form-check-input"
-		   id="useSubtitle"
-		   checked="@UseSubtitles"
-		   @onchange="(e) => { UseSubtitles = (bool)(e.Value ?? false); RecomputeCategories(e); }" />
-	<label class="form-check-label" for="useSubtitle">Include Subtitle Streams</label>
-</div>
+		<div class="form-check m-3">
+			<input type="checkbox"
+				   class="form-check-input"
+				   id="useChapters"
+				   checked="@UseChapters"
+				   @onchange="(e) => { UseChapters = (bool)(e.Value ?? false); RecomputeCategories(e); }" />
+			<label class="form-check-label" for="useChapters">Sort By Chapter Streams</label>
+		</div>
+	</div>
 
-<div class="form-check m-3">
-	<input type="checkbox"
-		   class="form-check-input"
-		   id="useChapters"
-		   checked="@UseChapters"
-		   @onchange="(e) => { UseChapters = (bool)(e.Value ?? false); RecomputeCategories(e); }" />
-	<label class="form-check-label" for="useChapters">Include Chapter Streams</label>
+	<div>
+		<button style="width: 300px; height: 200px;">
+			Next
+</button>
+	</div>
 </div>
 
 @foreach (var category in VideoCategories.Keys)
 {
 	<details>
 		<summary>
+			<input type="checkbox"
+				   class="form-check-input"
+				   id="include"
+				   checked="@UseVideo"
+				   
+				   />
+
+
 			Videos : @VideoCategories[category].Count (Category : @category)
 		</summary>
 
@@ -59,7 +78,6 @@
 
 	</details>
 }
-
 
 @code {
 
@@ -276,9 +294,5 @@
 
 		Console.WriteLine("Done Analyzing... \n\n");
 	}
-
-
-
-
 
 }
