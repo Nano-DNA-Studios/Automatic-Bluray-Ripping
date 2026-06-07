@@ -11,7 +11,11 @@
 		</div>
 
 		<div style="margin: 10px;">
-			<h2>@Metadata.Name</h2>
+
+			<div style="display: flex; flex-direction: row; justify-content: flex-start;" @onclick:stopPropagation="true">
+				<input @bind="@Metadata.Name" style="font-size: x-large;" />
+				<h2>.mkv</h2>
+			</div>
 
 			@if (Metadata.VideoStreams.Length == 1)
 			{
@@ -62,7 +66,6 @@
 
 			</div>
 		}
-
 
 		@if (Metadata.SubtitleStreams.Length > 0)
 		{

@@ -4,6 +4,8 @@
     {
         public string Name { get; set; }
 
+        public string NamingPattern { get; set; }
+
         public bool IsSelected { get; set; }
 
         public List<VideoMetadata> Metadata { get; private set; }
@@ -71,6 +73,12 @@
                 for (int i = 0; i < SubtitleStreams.Length; i++)
                     metadata.SubtitleStreams[i].CopyOutputValues(SubtitleStreams[i]);
             }
+
+            if (string.IsNullOrEmpty(NamingPattern))
+                return;
+
+            for (int i = 0; i < Metadata.Count; i++)
+                Metadata[i].Name = NamingPattern + (i + 1);
         }
     }
 }

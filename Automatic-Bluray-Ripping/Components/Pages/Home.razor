@@ -268,7 +268,7 @@
 				{
 					Name = metadata.Name,
 					InputFilePath = metadata.FilePath,
-					OutputFilePath = Path.Combine(DefaultSettings.DefaultTranscodeDirectory, Path.GetFileName(metadata.FilePath)),
+					OutputFilePath = Path.Combine(DefaultSettings.DefaultTranscodeDirectory, Path.GetFileName(metadata.Name) + ".mkv"),
 					Args = metadata.GetTranscodeArgs(),
 					ThumbnailBase64 = metadata.ThumbnailBase64,
 					TranscodePreset = TranscodePreset

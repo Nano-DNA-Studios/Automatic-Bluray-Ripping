@@ -27,7 +27,7 @@ namespace Automatic_Bluray_Ripping
         public VideoMetadata(string filePath)
         {
             FilePath = filePath;
-            Name = Path.GetFileName(FilePath);
+            Name = Path.GetFileNameWithoutExtension(FilePath);
             Duration = "";
             IsSelected = true;
 
@@ -181,16 +181,22 @@ namespace Automatic_Bluray_Ripping
             //Audio
             AudioStreamItem[] selectedAudio = AudioStreams.Where(s => s.IsSelected).ToArray();
 
-            args += $" -a " + string.Join(",", selectedAudio.Select(s => s.ID));
-            args += $" -E " + string.Join(",", selectedAudio.Select(s => s.Codec));
-            args += $" -6 " + string.Join(",", selectedAudio.Select(s => DefaultSettings.MixdownToCli[s.Mixdown]));
-            args += $" -A " + string.Join(",", selectedAudio.Select(s => $"\"{s.Name}\""));
+            if (selectedAudio.Length > 0)
+            {
+                args += $" -a " + string.Join(",", selectedAudio.Select(s => s.ID));
+                args += $" -E " + string.Join(",", selectedAudio.Select(s => s.Codec));
+                args += $" -6 " + string.Join(",", selectedAudio.Select(s => DefaultSettings.MixdownToCli[s.Mixdown]));
+                args += $" -A " + string.Join(",", selectedAudio.Select(s => $"\"{s.Name}\""));
+            }
 
             SubtitleStreamItem[] selectedSubtitle = SubtitleStreams.Where(s => s.IsSelected).ToArray();
 
-            args += $" -s " + string.Join(",", selectedSubtitle.Select(s => s.ID));
-            args += $" -S " + string.Join(",", selectedSubtitle.Select(s => $"\"{s.Name}\""));
-            
+            if (selectedSubtitle.Length > 0)
+            {
+                args += $" -s " + string.Join(",", selectedSubtitle.Select(s => s.ID));
+                args += $" -S " + string.Join(",", selectedSubtitle.Select(s => $"\"{s.Name}\""));
+            }
+
             return args;
         }
     }
