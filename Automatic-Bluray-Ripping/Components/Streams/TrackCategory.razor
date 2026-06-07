@@ -1,0 +1,72 @@
+﻿@rendermode InteractiveServer
+
+@if (Count > 0)
+{
+	<div style="background-color: gray; border-radius: 10px; padding: 20px;" @onclick:stopPropagation="true">
+		<details>
+			<summary>
+				<h3>@CategoryType Info (@Count Tracks)</h3>
+			</summary>
+
+			@if (CategoryType == "Video")
+			{
+				@foreach (VideoStreamItem videoStream in Category.VideoStreams)
+				{
+					<div style="margin-left: 20px; border-left: 2px solid #ccc; padding: 10px; " class="@(videoStream.IsSelected ? "card selected" : "card unselected")" @onclick="(e) => { videoStream.IsSelected = !videoStream.IsSelected; Category.ApplyStreamSelection(); }" @onclick:stopPropagation="true">
+						<h5>ID : @videoStream.ID</h5>
+						<h5>Resolution : @videoStream.Width x @videoStream.Height (@videoStream.FrameRate fps)</h5>
+						<h5>Codec : @videoStream.CodecName / @videoStream.Format</h5>
+						<h5>Duration : @videoStream.Duration</h5>
+					</div>
+				}
+			}
+
+			@if (CategoryType == "Audio")
+			{
+				@foreach (AudioStreamItem audioStream in Category.AudioStreams)
+				{
+					<Automatic_Bluray_Ripping.Components.Streams.AudioStream Stream="audioStream" />
+				}
+			}
+
+			@if (CategoryType == "Subtitle")
+			{
+				@foreach (SubtitleStreamItem subtitleStream in Category.SubtitleStreams)
+				{
+					<Automatic_Bluray_Ripping.Components.Streams.SubtitleStream Stream="@subtitleStream" />
+				}
+			}
+
+
+
+		</details>
+	</div>
+}
+
+@code {
+
+	[Parameter]
+	public string CategoryType { get; set; } = "";
+
+	[Parameter]
+	public VideoCategoryMetadata Category { get; set; } = new VideoCategoryMetadata("");
+
+	private int Count = 0;
+
+
+	protected override async Task OnInitializedAsync()
+	{
+		if (CategoryType == "Video")
+			Count = Category.VideoStreams.Length;
+
+		if (CategoryType == "Audio")
+			Count = Category.AudioStreams.Length;
+
+		if (CategoryType == "Subtitle")
+			Count = Category.SubtitleStreams.Length;
+
+		if (CategoryType == "Chapter")
+			Count = Category.ChapterStreams.Length;
+	}
+
+}

@@ -3,6 +3,7 @@
 @using MediaInfo;
 @using MediaInfo.Model;
 @inject NavigationManager Nav
+@inject TranscodeStateService StateService
 
 <PageTitle>Home</PageTitle>
 
@@ -17,14 +18,14 @@
 			<label class="form-check-label" for="useVideo">Sort By Video Streams</label>
 		</div>
 
-		<div class="form-check m-3">
+		@* <div class="form-check m-3">
 			<input type="checkbox"
 				   class="form-check-input"
 				   id="useAudio"
 				   checked="@UseAudio"
 				   @onchange="(e) => { UseAudio = (bool)(e.Value ?? false); RecomputeCategories(e); }" />
 			<label class="form-check-label" for="useAudio">Sort By Audio Streams</label>
-		</div>
+		</div> *@
 	</div>
 	<div>
 		<div class="form-check m-3">
@@ -36,14 +37,14 @@
 			<label class="form-check-label" for="useSubtitle">Sort By Subtitle Streams</label>
 		</div>
 
-		<div class="form-check m-3">
+		@* <div class="form-check m-3">
 			<input type="checkbox"
 				   class="form-check-input"
 				   id="useChapters"
 				   checked="@UseChapters"
 				   @onchange="(e) => { UseChapters = (bool)(e.Value ?? false); RecomputeCategories(e); }" />
 			<label class="form-check-label" for="useChapters">Sort By Chapter Streams</label>
-		</div>
+		</div> *@
 	</div>
 
 	<div>
@@ -53,26 +54,9 @@
 	</div>
 </div>
 
-@foreach (var category in VideoCategories.Keys)
+@foreach (var category in VideoCategories.Values)
 {
-	<details style="background-color: darkgray; padding: 10px; border-radius: 10px; margin: 10px">
-		<summary>
-			<input type="checkbox"
-				   class="form-check-input"
-				   id="include"
-				   checked="@VideoCategories[category].IsSelected" />
-
-			<input value="@VideoCategories[category].Name" />
-			(@VideoCategories[category].Metadata.Count Videos)
-		</summary>
-
-		<div style="background-color: red;">
-			@foreach (var metadata in VideoCategories[category].Metadata)
-			{
-				<VideoFile Metadata="@metadata" />
-			}
-		</div>
-	</details>
+	<VideoCategory Category="@category" />
 }
 
 @code {
@@ -84,14 +68,14 @@
 
 	private string directoryPath = "Blurays";
 
-	private string mkvDir = @"D:\NanoDNA Studios\Development\Automatic-Bluray-Ripping\Automatic-Bluray-Ripping\bin\Debug\net8.0\Blurays\Fairy_Tail_Extract_2";
+	private string mkvDir = @"D:\NanoDNA Studios\Development\Automatic-Bluray-Ripping\Automatic-Bluray-Ripping\bin\Debug\net8.0\Blurays\Fairy_Tail_Extract";
 	private string mkvFile = @"D:\NanoDNA Studios\Development\Automatic-Bluray-Ripping\Automatic-Bluray-Ripping\bin\Debug\net8.0\Blurays\Fairy_Tail_Extract\FairyTail Part15 Disc 2_t02.mkv";
 
 	private string[] MKVFiles = [];
 
 	private VideoMetadata[] Metadata;
 
-	private Dictionary<string, VideoCategory> VideoCategories = new Dictionary<string, VideoCategory>();
+	private Dictionary<string, VideoCategoryMetadata> VideoCategories = new Dictionary<string, VideoCategoryMetadata>();
 
 	private bool UseVideo = true;
 	private bool UseAudio = true;
@@ -103,7 +87,7 @@
 		Console.WriteLine("Starting Program...");
 		Console.WriteLine(exeDir);
 
-		VideoCategories = new Dictionary<string, VideoCategory>();
+		VideoCategories = new Dictionary<string, VideoCategoryMetadata>();
 		Metadata = GetVideoMetadata(mkvDir);
 
 		ComputeCategories();
@@ -153,10 +137,9 @@
 	private void ComputeCategories()
 	{
 		Console.WriteLine("Computing");
-		Dictionary<string, VideoCategory> videoCategories = new Dictionary<string, VideoCategory>();
+		Dictionary<string, VideoCategoryMetadata> videoCategories = new Dictionary<string, VideoCategoryMetadata>();
 
 		int index = 1;
-
 
 		foreach (VideoMetadata metadata in Metadata)
 		{
@@ -167,7 +150,7 @@
 
 			if (!videoCategories.ContainsKey(signature))
 			{
-				videoCategories.Add(signature, new VideoCategory($"Category {index}"));
+				videoCategories.Add(signature, new VideoCategoryMetadata($"Category {index}"));
 				index++;
 			}
 
@@ -245,6 +228,17 @@
 
 	private void GoToTranscode()
 	{
+		List<VideoCategoryMetadata> selectedCategories = new();
+
+		foreach (string key in VideoCategories.Keys)
+		{
+			VideoCategories[key].CleanCategory();
+
+			if (VideoCategories[key].IsSelected)
+				selectedCategories.Add(VideoCategories[key]);
+		}
+
+		StateService.SelectedCategories = selectedCategories;
 		Nav.NavigateTo("/transcode");
 	}
 

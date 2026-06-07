@@ -2,7 +2,7 @@
 @using MediaInfo;
 @using MediaInfo.Model;
 
-<div style="margin: 10px; background-color: lightgreen;">
+<div style="margin: 10px;" class="@(Metadata.IsSelected ? "video-card selected" : "video-card unselected")" @onclick="(e) => { Metadata.IsSelected = !Metadata.IsSelected; }">
 
 	<div style="display: flex; flex-direction: row; justify-content: flex-start; padding: 10px">
 
@@ -28,28 +28,26 @@
 
 		@if (Metadata.VideoStreams.Length > 1)
 		{
-			<div style="background-color: gray; border-radius: 10px; padding: 20px;">
+			<div style="background-color: gray; border-radius: 10px; padding: 20px;" @onclick:stopPropagation="true">
 
 				<h3>Video Info</h3>
 
 				@foreach (VideoStreamItem videoStream in Metadata.VideoStreams)
 				{
-					<div style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px; background-color: aqua;">
-
+					<div style="margin-left: 20px; border-left: 2px solid #ccc; padding: 10px; " class="@(videoStream.IsSelected ? "video-card selected" : "video-card unselected")" @onclick="(e) => { videoStream.IsSelected = !videoStream.IsSelected; }" @onclick:stopPropagation="true">
 						<h5>ID : @videoStream.ID</h5>
 						<h5>Resolution : @videoStream.Width x @videoStream.Height (@videoStream.FrameRate fps)</h5>
 						<h5>Codec : @videoStream.CodecName / @videoStream.Format</h5>
 						<h5>Duration : @videoStream.Duration</h5>
-
 					</div>
 				}
 
 			</div>
 		}
 
-		@if (Metadata.AudioStreams.Length > 1)
+		@if (Metadata.AudioStreams.Length > 0)
 		{
-			<div style="background-color: gray; border-radius: 10px; padding: 20px;">
+			<div style="background-color: gray; border-radius: 10px; padding: 20px;" @onclick:stopPropagation="true">
 
 				<details>
 					<summary>
@@ -58,14 +56,7 @@
 
 					@foreach (AudioStreamItem audioStream in Metadata.AudioStreams)
 					{
-						<div style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px; background-color: aqua;">
-
-							<h5>ID : @audioStream.ID</h5>
-							<h5>Format : @audioStream.Format</h5>
-							<h5>Channels : @audioStream.Channels</h5>
-							<h5>Language : @audioStream.Language</h5>
-							<h5>Bitrate : @audioStream.Bitrate bps</h5>
-						</div>
+						<Automatic_Bluray_Ripping.Components.Streams.AudioStream Stream="audioStream" />
 					}
 				</details>
 
@@ -73,9 +64,9 @@
 		}
 
 
-		@if (Metadata.SubtitleStreams.Length > 1)
+		@if (Metadata.SubtitleStreams.Length > 0)
 		{
-			<div style="background-color: gray; border-radius: 10px; padding: 20px;">
+			<div style="background-color: gray; border-radius: 10px; padding: 20px;" @onclick:stopPropagation="true">
 
 				<details>
 					<summary>
@@ -84,21 +75,16 @@
 
 					@foreach (SubtitleStreamItem subtitleStream in Metadata.SubtitleStreams)
 					{
-						<div style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px; background-color: aqua;">
-
-							<h5>ID : @subtitleStream.ID</h5>
-							<h5>Format : @subtitleStream.Format</h5>
-							<h5>Language : @subtitleStream.Language</h5>
-						</div>
+						<Automatic_Bluray_Ripping.Components.Streams.SubtitleStream Stream="@subtitleStream" />
 					}
 				</details>
 
 			</div>
 		}
 
-		@if (Metadata.ChapterStreams.Length > 1)
+		@if (Metadata.ChapterStreams.Length > 0)
 		{
-			<div style="background-color: gray; border-radius: 10px; padding: 20px;">
+			<div style="background-color: gray; border-radius: 10px; padding: 20px;" @onclick:stopPropagation="true">
 
 				<details>
 					<summary>
@@ -107,7 +93,7 @@
 
 					@foreach (ChapterStreamItem chapterStream in Metadata.ChapterStreams)
 					{
-						<div style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px; background-color: aqua;">
+						<div style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px; " class="@(chapterStream.IsSelected ? "video-card selected" : "video-card unselected")" @onclick="(e) => { chapterStream.IsSelected = !chapterStream.IsSelected; }" @onclick:stopPropagation="true">
 
 							<h5>ID : @chapterStream.ID</h5>
 							<h5>Name : @chapterStream.Name</h5>

@@ -1,0 +1,35 @@
+﻿@rendermode InteractiveServer
+
+<div style="margin-left: 20px; border-left: 2px solid #ccc; padding: 10px; " class="@(Stream.IsSelected ? "subtitle-card selected" : "subtitle-card unselected")" @onclick="(e) => { Stream.IsSelected = !Stream.IsSelected; }" @onclick:stopPropagation="true">
+	<h5>(@Stream.ID) - @Stream.Language (@Stream.Format)</h5>
+
+	<div style="display: flex; flex-direction: row; justify-content: flex-start; gap:10px" @onclick:stopPropagation="true">
+		<h5>Name:</h5>
+		<input @bind="@Stream.Name" style="width:100%" />
+	</div>
+
+	<div style="display: flex; flex-direction: row; justify-content: flex-start; gap:10px;">
+		<input type="checkbox"
+			   class="form-check-input"
+			   id="burn-in"
+			   @bind="@Stream.BurnIn"
+			   style="width: 30px; height:30px;" />
+
+		<h5>Burn In</h5>
+	</div>
+
+	<div style="display: flex; flex-direction: row; justify-content: flex-start; gap:10px;">
+		<input type="checkbox"
+			   class="form-check-input"
+			   id="default"
+			   @bind="@Stream.Default"
+			   style="width: 30px; height:30px;" />
+
+		<h5>Default</h5>
+	</div>
+</div>
+
+@code {
+	[Parameter]
+	public SubtitleStreamItem Stream { get; set; } = new SubtitleStreamItem();
+}

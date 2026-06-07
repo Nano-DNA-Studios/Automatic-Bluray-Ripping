@@ -1,0 +1,14 @@
+﻿
+/* Card is selected */
+.video-card.selected {
+    border: 2px solid #0288d1;
+    background-color: #00ff00;
+    opacity: 1.0;
+}
+
+/* Card is unselected */
+.video-card.unselected {
+    border: 1px solid #ccc;
+    background-color: #ff0000;
+    opacity: 0.4; /* Looks greyed out */
+}

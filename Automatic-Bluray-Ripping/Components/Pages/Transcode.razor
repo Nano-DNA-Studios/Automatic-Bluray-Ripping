@@ -1,7 +1,82 @@
 ﻿@page "/transcode"
+@rendermode InteractiveServer
+@inject TranscodeStateService StateService
+
+<PageTitle>Transcode</PageTitle>
 
 <h3>Transcode</h3>
 
+<div>
+	<div>
+		<label for="formatSelect">Choose Transcode Preset:</label>
+		<select id="formatSelect" class="form-control" @bind="TranscodePreset">
+			<option value="">-- Select a Format --</option>
+			@foreach (string preset in Presets)
+			{
+				<option value="@preset">@Path.GetFileNameWithoutExtension(preset)</option>
+			}
+		</select>
+	</div>
+
+	<button style="width: 100%; padding: 10px; margin-top: 10px">
+		Transcode
+	</button>
+</div>
+
+
+@foreach (var category in VideoCategories)
+{
+	<details style="background-color: darkgray; padding: 10px; border-radius: 10px; margin: 10px">
+		<summary>
+			<input type="checkbox"
+				   class="form-check-input"
+				   id="include"
+				   checked="@category.IsSelected" />
+
+			<input value="@category.Name" />
+			(@category.Metadata.Count Videos)
+		</summary>
+
+		<div>
+			@foreach (var metadata in category.Metadata)
+			{
+				<VideoFile Metadata="@metadata" />
+			}
+		</div>
+	</details>
+}
+
+
+
+
 @code {
 
+	private List<VideoCategoryMetadata> VideoCategories;
+
+	private string TranscodePreset = "";
+
+	private string[] Presets = [];
+
+	protected override async Task OnInitializedAsync()
+	{
+		VideoCategories = StateService.SelectedCategories;
+
+		Presets = GetHandbrakePresets();
+	}
+
+	private string[] GetHandbrakePresets ()
+	{
+		string fullPath = Path.GetDirectoryName(Environment.ProcessPath);
+		string presetDir = "HandbrakePresets";
+
+		if (!Directory.Exists(fullPath))
+			return [];
+
+		fullPath = Path.Combine(fullPath, presetDir);
+
+		if (!Directory.Exists(fullPath))
+			return [];
+
+			return Directory.GetFiles(fullPath);
+	}
 }

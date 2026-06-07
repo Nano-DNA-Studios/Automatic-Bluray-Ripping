@@ -12,6 +12,9 @@ namespace Automatic_Bluray_Ripping
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
 
+            builder.Services.AddScoped<TranscodeStateService>();
+            builder.Services.AddScoped<DefaultSettings>();
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
