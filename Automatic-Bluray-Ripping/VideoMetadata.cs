@@ -55,28 +55,28 @@ namespace Automatic_Bluray_Ripping
 
             foreach (var video in mediaFile.VideoStreams)
             {
-                videoStreams.Add(new VideoStreamItem(video, mediaFile.Duration));
+                videoStreams.Add(new VideoStreamItem(video, mediaFile.Duration, videoStreams.Count + 1));
             }
 
             List<AudioStreamItem> audioStreams = new List<AudioStreamItem>();
 
             foreach (var audio in mediaFile.AudioStreams)
             {
-                audioStreams.Add(new AudioStreamItem(audio));
+                audioStreams.Add(new AudioStreamItem(audio, audioStreams.Count + 1));
             }
 
             List<SubtitleStreamItem> subtitleStreams = new List<SubtitleStreamItem>();
 
             foreach (var subtitle in mediaFile.Subtitles)
             {
-                subtitleStreams.Add(new SubtitleStreamItem(subtitle));
+                subtitleStreams.Add(new SubtitleStreamItem(subtitle, subtitleStreams.Count + 1));
             }
 
             List<ChapterStreamItem> chapterStreams = new List<ChapterStreamItem>();
 
             foreach (var chapter in mediaFile.Chapters)
             {
-                chapterStreams.Add(new ChapterStreamItem(chapter));
+                chapterStreams.Add(new ChapterStreamItem(chapter, chapterStreams.Count + 1));
             }
 
             VideoStreams = videoStreams.ToArray();
@@ -212,9 +212,9 @@ namespace Automatic_Bluray_Ripping
         public string Duration { get; set; }
 
 
-        public VideoStreamItem(VideoStream video, int duration)
+        public VideoStreamItem(VideoStream video, int duration, int id)
         {
-            this.ID = video.Id;
+            this.ID = id;
             this.Width = video.Width;
             this.Height = video.Height;
             this.FrameRate = video.FrameRate;
@@ -252,9 +252,9 @@ namespace Automatic_Bluray_Ripping
             this.ID = 0;
         }
 
-        public AudioStreamItem(AudioStream audio)
+        public AudioStreamItem(AudioStream audio, int id)
         {
-            this.ID = audio.Id;
+            this.ID = id;
             this.Format = $"{audio.CodecFriendly} - {audio.Name}";
             this.Channels = audio.Channel;
             this.Language = audio.Language;
@@ -297,9 +297,9 @@ namespace Automatic_Bluray_Ripping
             this.ID = 0;
         }
 
-        public SubtitleStreamItem(SubtitleStream subtitle)
+        public SubtitleStreamItem(SubtitleStream subtitle, int id)
         {
-            this.ID = subtitle.Id;
+            this.ID = id;
             this.Format = subtitle.Format;
             this.Language = subtitle.Language;
             this.IsSelected = true;
@@ -326,9 +326,9 @@ namespace Automatic_Bluray_Ripping
         public string Name { get; set; } = "";
         public bool IsSelected { get; set; }
 
-        public ChapterStreamItem(ChapterStream chapter)
+        public ChapterStreamItem(ChapterStream chapter, int id)
         {
-            this.ID = chapter.Id;
+            this.ID = id;
             this.Name = chapter.Name;
             this.IsSelected = true;
         }
