@@ -12,9 +12,9 @@
 	<div style="display: flex; flex-direction: row; justify-content: flex-start; gap:10px" @onclick:stopPropagation="true">
 		<h5>Codec:</h5>
 		<select id="codecSelect" class="form-control" @bind="@Stream.Codec">
-			@foreach (string codec in Codecs)
+			@foreach (string codec in DefaultSettings.AudioCodecs.Keys)
 			{
-				<option value="@codec">@codec</option>
+				<option value="@DefaultSettings.AudioCodecs[codec]">@codec</option>
 			}
 		</select>
 	</div>
@@ -33,7 +33,6 @@
 
 @code {
 
-	private string[] Codecs = DefaultSettings.AudioCodecs;
 	private string[] Mixdowns = DefaultSettings.Mixdown.Values.ToArray();
 
 	[Parameter]
@@ -42,11 +41,5 @@
 	protected override async Task OnInitializedAsync()
 	{
 		Mixdowns = DefaultSettings.GetAllowableMixdowns(Stream.Channels);
-	}
-
-	private void Update()
-	{
-		
-
 	}
 }

@@ -1,4 +1,5 @@
 ﻿@page "/transcode"
+@using System.Diagnostics
 @rendermode InteractiveServer
 @inject TranscodeStateService StateService
 
@@ -6,34 +7,13 @@
 
 <h3>Transcode</h3>
 
-<div>
-	<div>
-		<label for="formatSelect">Choose Transcode Preset:</label>
-		<select id="formatSelect" class="form-control" @bind="TranscodePreset">
-			<option value="">-- Select a Format --</option>
-			@foreach (string preset in Presets)
-			{
-				<option value="@preset">@Path.GetFileNameWithoutExtension(preset)</option>
-			}
-		</select>
-	</div>
+<progress value="@CurrentProgressPercent" max="100" style="width: 100%; height: 25px;"></progress>
 
-	<button style="width: 100%; padding: 10px; margin-top: 10px">
-		Transcode
-	</button>
-</div>
-
-
-@foreach (var category in VideoCategories)
+@foreach (var category in StateService.SelectedCategories)
 {
 	<details style="background-color: darkgray; padding: 10px; border-radius: 10px; margin: 10px">
 		<summary>
-			<input type="checkbox"
-				   class="form-check-input"
-				   id="include"
-				   checked="@category.IsSelected" />
-
-			<input value="@category.Name" />
+			@category.Name
 			(@category.Metadata.Count Videos)
 		</summary>
 
@@ -46,37 +26,94 @@
 	</details>
 }
 
-
-
-
 @code {
 
 	private List<VideoCategoryMetadata> VideoCategories;
 
 	private string TranscodePreset = "";
 
-	private string[] Presets = [];
+	private double CurrentProgressPercent = 0;
 
 	protected override async Task OnInitializedAsync()
 	{
 		VideoCategories = StateService.SelectedCategories;
+		TranscodePreset = StateService.HandbrakePreset;
 
-		Presets = GetHandbrakePresets();
+		int index = 1;
+
+		foreach (VideoCategoryMetadata category in VideoCategories)
+		{
+			foreach (VideoMetadata metadata in category.Metadata)
+			{
+				string arguments = $"--preset-import-file \"{TranscodePreset}\" -Z \"{Path.GetFileNameWithoutExtension(TranscodePreset)}\" -i \"{metadata.FilePath}\" -o \"{Path.Combine(Path.GetDirectoryName(metadata.FilePath), $"output_{index}.mkv")}\"{metadata.GetTranscodeArgs()}";
+
+				index++;
+
+				Console.WriteLine(arguments);
+
+				ProcessStartInfo startInfo = new ProcessStartInfo
+				{
+					FileName = @"C:\Program Files\HandBrake\HandBrakeCLI.exe",
+					Arguments = arguments,
+					RedirectStandardOutput = true,
+					RedirectStandardError = true,
+					UseShellExecute = false,
+					CreateNoWindow = true
+				};
+
+				using (Process process = new Process { StartInfo = startInfo })
+				{
+					// 1. Attach the event handlers to stream output live to the console
+					process.OutputDataReceived += (sender, e) =>
+					{
+						if (!string.IsNullOrEmpty(e.Data) && e.Data.StartsWith("Encoding:"))
+						{
+							Console.WriteLine(e.Data);
+							string percent = e.Data.Split("(")[0];
+							percent = percent.Split(",")[1];
+							percent = percent.Replace("%", "").Trim();
+
+							if (double.TryParse(percent, out double percentDbl))
+								CurrentProgressPercent = percentDbl;
+
+							Console.WriteLine($"Percent : {percent}");
+
+							InvokeAsync(() =>
+							{
+								CurrentProgressPercent = percentDbl;
+								StateHasChanged();
+							});
+						}
+					};
+
+					process.ErrorDataReceived += (sender, e) =>
+					{
+						if (!string.IsNullOrEmpty(e.Data))
+						{
+							// HandBrake writes its progress ticks (e.g., % done) here
+							Console.WriteLine($"[HandBrake LOG] {e.Data}");
+						}
+					};
+
+					// 2. Start the process
+					process.Start();
+
+					// 3. CRITICAL: Begin reading the streams asynchronously
+					process.BeginOutputReadLine();
+					process.BeginErrorReadLine();
+
+					// 4. Await the exit of the application safely
+					await process.WaitForExitAsync();
+
+					Console.WriteLine("Finished Transcoding");
+				}
+			}
+		}
+
+
+
+
+
 	}
 
-	private string[] GetHandbrakePresets ()
-	{
-		string fullPath = Path.GetDirectoryName(Environment.ProcessPath);
-		string presetDir = "HandbrakePresets";
-
-		if (!Directory.Exists(fullPath))
-			return [];
-
-		fullPath = Path.Combine(fullPath, presetDir);
-
-		if (!Directory.Exists(fullPath))
-			return [];
-
-			return Directory.GetFiles(fullPath);
-	}
 }

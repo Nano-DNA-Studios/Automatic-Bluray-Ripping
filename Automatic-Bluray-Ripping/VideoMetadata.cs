@@ -172,11 +172,32 @@ namespace Automatic_Bluray_Ripping
                 }
             }
         }
+
+        public string GetTranscodeArgs ()
+        {
+            string args = "";
+
+            //Audio
+            AudioStreamItem[] selectedAudio = AudioStreams.Where(s => s.IsSelected).ToArray();
+
+            args += $" -a " + string.Join(",", selectedAudio.Select(s => s.ID));
+            args += $" -E " + string.Join(",", selectedAudio.Select(s => s.Codec));
+            args += $" -6 " + string.Join(",", selectedAudio.Select(s => DefaultSettings.MixdownToCli[s.Mixdown]));
+            args += $" -A " + string.Join(",", selectedAudio.Select(s => $"\"{s.Name}\""));
+
+            SubtitleStreamItem[] selectedSubtitle = SubtitleStreams.Where(s => s.IsSelected).ToArray();
+
+            args += $" -s " + string.Join(",", selectedSubtitle.Select(s => s.ID));
+            args += $" -S " + string.Join(",", selectedSubtitle.Select(s => $"\"{s.Name}\""));
+            
+            return args;
+        }
     }
 
     public class VideoStreamItem
     {
         public int ID { get; set; }
+        public bool IsSelected { get; set; }
 
         public int Width { get; set; }
 
@@ -190,7 +211,6 @@ namespace Automatic_Bluray_Ripping
 
         public string Duration { get; set; }
 
-        public bool IsSelected { get; set; }
 
         public VideoStreamItem(VideoStream video, int duration)
         {
@@ -213,11 +233,8 @@ namespace Automatic_Bluray_Ripping
     public class AudioStreamItem
     {
         //Every Stream Has an Input + Output Subobject
-
-        public string Name { get; set; } = "";
         public int ID { get; set; } = 0;
         public bool IsSelected { get; set; }
-
 
         //Input Info
         public string Format { get; set; } = "";
@@ -226,6 +243,7 @@ namespace Automatic_Bluray_Ripping
         public double Bitrate { get; set; } = 0;
 
         //Output Info
+        public string Name { get; set; } = "";
         public string Codec { get; set; } = "";
         public string Mixdown { get; set; } = "";
 
@@ -242,9 +260,8 @@ namespace Automatic_Bluray_Ripping
             this.Language = audio.Language;
             this.Bitrate = Math.Round((audio.Bitrate / 1024.0), 0);
             this.IsSelected = true;
+
             this.Name = $"{this.Language} - {this.Format}";
-
-
             this.Codec = DefaultSettings.AudioCodec;
             this.Mixdown = DefaultSettings.GetMaxMixdown(Channels);
         }
@@ -253,19 +270,25 @@ namespace Automatic_Bluray_Ripping
         {
             return $"[{ID} | {Format} | {Channels} | {Language}]";
         }
+
+        public void CopyOutputValues (AudioStreamItem stream)
+        {
+            this.Name = stream.Name;
+            this.Codec = stream.Codec;
+            this.Mixdown = stream.Mixdown;
+        }
     }
 
     public class SubtitleStreamItem
     {
         public int ID { get; set; } = 0;
         public bool IsSelected { get; set; }
-        public string Name { get; set; }
-
-
+        
         public string Format { get; set; } = "";
         public string Language { get; set; } = "";
-        
+
         //Output
+        public string Name { get; set; }
         public bool BurnIn { get; set; } = false;
         public bool Default { get; set; } = false;
 
@@ -288,15 +311,19 @@ namespace Automatic_Bluray_Ripping
         {
             return $"[{ID} | {Format} | {Language}]";
         }
+
+        public void CopyOutputValues(SubtitleStreamItem stream)
+        {
+            this.Name = stream.Name;
+            this.BurnIn = stream.BurnIn;
+            this.Default = stream.Default;
+        }
     }
 
     public class ChapterStreamItem
     {
         public int ID { get; set; } = 0;
         public string Name { get; set; } = "";
-        //public string Format { get; set; } = "";
-        //public string Language { get; set; } = "";
-
         public bool IsSelected { get; set; }
 
         public ChapterStreamItem(ChapterStream chapter)
@@ -310,16 +337,5 @@ namespace Automatic_Bluray_Ripping
         {
             return $"[{ID} | {Name}]";
         }
-    }
-
-    public class MemoryFrameExtractor
-    {
-        // Ensure this matches the actual execution path of your ffmpeg binary
-
-
-        /// <summary>
-        /// Extracts a frame entirely to memory and returns a Base64 string safe for HTML <img> tags.
-        /// </summary>
-
     }
 }

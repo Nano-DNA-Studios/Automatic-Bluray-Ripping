@@ -58,5 +58,19 @@
                     metadata.ChapterStreams[i].IsSelected = ChapterStreams[i].IsSelected;
             }
         }
+
+        public void ApplyOutputConfig ()
+        {
+            ApplyStreamSelection();
+
+            foreach (VideoMetadata metadata in Metadata)
+            {
+                for (int i = 0; i < AudioStreams.Length; i++)
+                    metadata.AudioStreams[i].CopyOutputValues(AudioStreams[i]);
+
+                for (int i = 0; i < SubtitleStreams.Length; i++)
+                    metadata.SubtitleStreams[i].CopyOutputValues(SubtitleStreams[i]);
+            }
+        }
     }
 }

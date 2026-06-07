@@ -2,6 +2,8 @@
 {
     public class TranscodeStateService
     {
+        public string HandbrakePreset = "";
+
         public List<VideoCategoryMetadata> SelectedCategories { get; set; } = new();
 
         //public Dictionary<string, VideoCategory> SelectedCategories { get; set; } = new();

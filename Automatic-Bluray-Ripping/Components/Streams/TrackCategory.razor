@@ -8,19 +8,6 @@
 				<h3>@CategoryType Info (@Count Tracks)</h3>
 			</summary>
 
-			@if (CategoryType == "Video")
-			{
-				@foreach (VideoStreamItem videoStream in Category.VideoStreams)
-				{
-					<div style="margin-left: 20px; border-left: 2px solid #ccc; padding: 10px; " class="@(videoStream.IsSelected ? "card selected" : "card unselected")" @onclick="(e) => { videoStream.IsSelected = !videoStream.IsSelected; Category.ApplyStreamSelection(); }" @onclick:stopPropagation="true">
-						<h5>ID : @videoStream.ID</h5>
-						<h5>Resolution : @videoStream.Width x @videoStream.Height (@videoStream.FrameRate fps)</h5>
-						<h5>Codec : @videoStream.CodecName / @videoStream.Format</h5>
-						<h5>Duration : @videoStream.Duration</h5>
-					</div>
-				}
-			}
-
 			@if (CategoryType == "Audio")
 			{
 				@foreach (AudioStreamItem audioStream in Category.AudioStreams)
@@ -37,7 +24,17 @@
 				}
 			}
 
+			@if (CategoryType == "Chapter")
+			{
+				@foreach (ChapterStreamItem chapterStream in Category.ChapterStreams)
+				{
+					<div style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px; " class="@(chapterStream.IsSelected ? "card selected" : "card unselected")" @onclick="(e) => { chapterStream.IsSelected = !chapterStream.IsSelected; Category.ApplyStreamSelection(); }" @onclick:stopPropagation="true">
 
+						<h5>ID : @chapterStream.ID</h5>
+						<h5>Name : @chapterStream.Name</h5>
+					</div>
+				}
+			}
 
 		</details>
 	</div>
@@ -53,7 +50,6 @@
 
 	private int Count = 0;
 
-
 	protected override async Task OnInitializedAsync()
 	{
 		if (CategoryType == "Video")
@@ -68,5 +64,4 @@
 		if (CategoryType == "Chapter")
 			Count = Category.ChapterStreams.Length;
 	}
-
 }
