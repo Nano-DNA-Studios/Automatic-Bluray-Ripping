@@ -2,6 +2,10 @@
 {
     public class DefaultSettings
     {
+        public static string DefaultAudioCodec = "flac16";
+
+        public static string DefaultTranscodeDirectory = @"D:\NanoDNA Studios\Development\Automatic-Bluray-Ripping\Automatic-Bluray-Ripping\bin\Debug\net8.0\Blurays\Transcode";
+
         public static Dictionary<string, string> AudioCodecs = new Dictionary<string, string>
         {
             // Encoding Options
@@ -27,8 +31,6 @@
             { "ALAC Passthru", "copy:alac" },
             { "Auto Passthru (Global)", "copy" }
         };
-
-        public static string AudioCodec = "flac16";
 
         public static Dictionary<int, string> Mixdown = new Dictionary<int, string>
         {
@@ -82,6 +84,5 @@
 
             return Mixdown[1];
         }
-
     }
 }

@@ -7,7 +7,7 @@
 	<div style="display: flex; flex-direction: row; justify-content: flex-start; padding: 10px">
 
 		<div>
-			<img src="@ThumbnailBase64" alt="Video Thumbnail" style="width: 400px; height: auto; border-radius: 4px;" />
+			<img src="@Metadata.ThumbnailBase64" alt="Video Thumbnail" style="width: 400px; height: auto; border-radius: 4px;" />
 		</div>
 
 		<div style="margin: 10px;">
@@ -111,10 +111,8 @@
 	[Parameter]
 	public VideoMetadata Metadata { get; set; } = new VideoMetadata("");
 
-	string ThumbnailBase64 = "images/placeholder.jpg";
-
 	protected override async Task OnInitializedAsync()
 	{
-		ThumbnailBase64 = await Metadata.ExtractThumbnailToBase64Async();
+		Metadata.ExtractThumbnailToBase64Async();
 	}
 }

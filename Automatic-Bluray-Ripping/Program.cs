@@ -12,8 +12,12 @@ namespace Automatic_Bluray_Ripping
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
 
-            builder.Services.AddScoped<TranscodeStateService>();
+            //builder.Services.AddScoped<TranscodeStateService>();
             builder.Services.AddScoped<DefaultSettings>();
+
+            TranscodeQueueService transcodeQueue = new TranscodeQueueService();
+            builder.Services.AddSingleton<TranscodeQueueService>(transcodeQueue);
+            builder.Services.AddHostedService<TranscodeBackgroundWorker>(provider => new TranscodeBackgroundWorker(transcodeQueue));
 
             var app = builder.Build();
 

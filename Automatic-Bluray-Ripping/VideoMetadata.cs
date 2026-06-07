@@ -36,6 +36,8 @@ namespace Automatic_Bluray_Ripping
             SubtitleStreams = [];
             ChapterStreams = [];
 
+            ThumbnailBase64 = "images/placeholder.jpg";
+
             ParseFile();
         }
 
@@ -116,10 +118,11 @@ namespace Automatic_Bluray_Ripping
             return signature;
         }
 
-        public async Task<string> ExtractThumbnailToBase64Async()
+        public async Task ExtractThumbnailToBase64Async()
         {
-            if (!File.Exists(FilePath)) return "images/placeholder.jpg";
-
+            if (!File.Exists(FilePath))
+                return;
+            
             string timeOffset = "00:01:00";
 
             try
@@ -163,12 +166,10 @@ namespace Automatic_Bluray_Ripping
                     if (imageBytes.Length == 0 || process.ExitCode != 0)
                     {
                         Console.WriteLine($"Image Extraction failed for {Name}");
-                        return "images/placeholder.jpg";
+                        return;
                     }
 
-                    Console.WriteLine("Succeed");
-
-                    return $"data:image/jpeg;base64,{Convert.ToBase64String(imageBytes)}";
+                    ThumbnailBase64 = $"data:image/jpeg;base64,{Convert.ToBase64String(imageBytes)}";
                 }
             }
         }
@@ -262,7 +263,7 @@ namespace Automatic_Bluray_Ripping
             this.IsSelected = true;
 
             this.Name = $"{this.Language} - {this.Format}";
-            this.Codec = DefaultSettings.AudioCodec;
+            this.Codec = DefaultSettings.DefaultAudioCodec;
             this.Mixdown = DefaultSettings.GetMaxMixdown(Channels);
         }
 

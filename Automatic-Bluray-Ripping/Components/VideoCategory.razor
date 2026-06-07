@@ -20,7 +20,7 @@
 		<TrackCategory CategoryType="Chapter" Category="@Category"/>
 	</div> 
 
-	<button style="width: 100%; margin: 10px;" @onclick="@Category.ApplyOutputConfig">
+	<button style="width: 100%; margin: 10px;" @onclick="@ExecuteApplyAll">
 		Apply to All
 	</button>
 
@@ -41,4 +41,9 @@
 
 	}
 
+	private void ExecuteApplyAll()
+	{
+		Category.ApplyOutputConfig();
+		StateHasChanged();
+	}
 }

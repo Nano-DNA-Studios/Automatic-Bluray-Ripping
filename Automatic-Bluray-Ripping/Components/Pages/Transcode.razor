@@ -1,7 +1,7 @@
 ﻿@page "/transcode"
 @using System.Diagnostics
 @rendermode InteractiveServer
-@inject TranscodeStateService StateService
+@inject TranscodeQueueService QueueService
 
 <PageTitle>Transcode</PageTitle>
 
@@ -9,111 +9,57 @@
 
 <progress value="@CurrentProgressPercent" max="100" style="width: 100%; height: 25px;"></progress>
 
-@foreach (var category in StateService.SelectedCategories)
+@foreach (var job in QueueService.GetJobs())
 {
-	<details style="background-color: darkgray; padding: 10px; border-radius: 10px; margin: 10px">
-		<summary>
-			@category.Name
-			(@category.Metadata.Count Videos)
-		</summary>
+	<div style="display: flex; flex-direction: row; justify-content: flex-start; padding: 10px; border-radius: 10px; background-color: gray;">
 
 		<div>
-			@foreach (var metadata in category.Metadata)
-			{
-				<VideoFile Metadata="@metadata" />
-			}
+			<img src="@job.ThumbnailBase64" alt="Video Thumbnail" style="width: 400px; height: auto; border-radius: 4px;" />
 		</div>
-	</details>
+
+		<div style="padding: 10px;">
+
+			<h3>@job.Name</h3>
+			<h5>@job.InputFilePath</h5>
+			<h5>@job.OutputFilePath</h5>
+			<p>@job.GetFullArgument()</p>
+			<progress value="@job.Progress" max="100" style="width: 100%; height: 25px;"></progress>
+		</div>
+	</div>
 }
 
 @code {
 
-	private List<VideoCategoryMetadata> VideoCategories;
-
-	private string TranscodePreset = "";
-
 	private double CurrentProgressPercent = 0;
 
-	protected override async Task OnInitializedAsync()
+	protected override void OnInitialized()
 	{
-		VideoCategories = StateService.SelectedCategories;
-		TranscodePreset = StateService.HandbrakePreset;
+		CurrentProgressPercent = QueueService.CurrentProgressPercent;
 
-		int index = 1;
+		// Wire up event notifications to pull structural processing mutations down
+		QueueService.OnProgressUpdated += HandleProgressUpdate;
+		QueueService.OnQueueChanged += HandleQueueRefresh;
+	}
 
-		foreach (VideoCategoryMetadata category in VideoCategories)
+	private void HandleProgressUpdate(double progress)
+	{
+		InvokeAsync(() =>
 		{
-			foreach (VideoMetadata metadata in category.Metadata)
-			{
-				string arguments = $"--preset-import-file \"{TranscodePreset}\" -Z \"{Path.GetFileNameWithoutExtension(TranscodePreset)}\" -i \"{metadata.FilePath}\" -o \"{Path.Combine(Path.GetDirectoryName(metadata.FilePath), $"output_{index}.mkv")}\"{metadata.GetTranscodeArgs()}";
+			CurrentProgressPercent = progress;
+			StateHasChanged();
+		});
+	}
 
-				index++;
+	private void HandleQueueRefresh()
+	{
+		InvokeAsync(StateHasChanged);
+	}
 
-				Console.WriteLine(arguments);
-
-				ProcessStartInfo startInfo = new ProcessStartInfo
-				{
-					FileName = @"C:\Program Files\HandBrake\HandBrakeCLI.exe",
-					Arguments = arguments,
-					RedirectStandardOutput = true,
-					RedirectStandardError = true,
-					UseShellExecute = false,
-					CreateNoWindow = true
-				};
-
-				using (Process process = new Process { StartInfo = startInfo })
-				{
-					// 1. Attach the event handlers to stream output live to the console
-					process.OutputDataReceived += (sender, e) =>
-					{
-						if (!string.IsNullOrEmpty(e.Data) && e.Data.StartsWith("Encoding:"))
-						{
-							Console.WriteLine(e.Data);
-							string percent = e.Data.Split("(")[0];
-							percent = percent.Split(",")[1];
-							percent = percent.Replace("%", "").Trim();
-
-							if (double.TryParse(percent, out double percentDbl))
-								CurrentProgressPercent = percentDbl;
-
-							Console.WriteLine($"Percent : {percent}");
-
-							InvokeAsync(() =>
-							{
-								CurrentProgressPercent = percentDbl;
-								StateHasChanged();
-							});
-						}
-					};
-
-					process.ErrorDataReceived += (sender, e) =>
-					{
-						if (!string.IsNullOrEmpty(e.Data))
-						{
-							// HandBrake writes its progress ticks (e.g., % done) here
-							Console.WriteLine($"[HandBrake LOG] {e.Data}");
-						}
-					};
-
-					// 2. Start the process
-					process.Start();
-
-					// 3. CRITICAL: Begin reading the streams asynchronously
-					process.BeginOutputReadLine();
-					process.BeginErrorReadLine();
-
-					// 4. Await the exit of the application safely
-					await process.WaitForExitAsync();
-
-					Console.WriteLine("Finished Transcoding");
-				}
-			}
-		}
-
-
-
-
-
+	public void Dispose()
+	{
+		// Clean up subscriptions to protect memory
+		QueueService.OnProgressUpdated -= HandleProgressUpdate;
+		QueueService.OnQueueChanged -= HandleQueueRefresh;
 	}
 
 }

@@ -3,7 +3,7 @@
 @using MediaInfo;
 @using MediaInfo.Model;
 @inject NavigationManager Nav
-@inject TranscodeStateService StateService
+@inject TranscodeQueueService QueueService
 
 <PageTitle>Transcode Configuration</PageTitle>
 
@@ -99,7 +99,8 @@
 	protected override async Task OnInitializedAsync()
 	{
 		Console.WriteLine("Starting Program...");
-		Console.WriteLine(exeDir);
+
+		if (VideoCategories.Count > 0) return;
 
 		VideoCategories = new Dictionary<string, VideoCategoryMetadata>();
 		Metadata = GetVideoMetadata(mkvDir);
@@ -119,16 +120,12 @@
 
 		foreach (string dir in dirs)
 		{
-			Console.WriteLine($"Exploring Directory {dir}...");
-
 			if (!IsBlurayBackup(dir))
 			{
 				//Just read the Files / find all video files? (Search for .mkv only?)
 				Console.WriteLine("The Directory is not a Bluray");
 				continue;
 			}
-
-			Console.WriteLine($"The Directory {dir} is a Bluray");
 
 			// foreach (string file in GetAllBlurayVideoFiles(GetBlurayStreamDir(dir)))
 			// {
@@ -164,7 +161,6 @@
 		ComputeCategories();
 	}
 
-
 	private void ComputeCategories()
 	{
 		Console.WriteLine("Computing");
@@ -176,8 +172,6 @@
 		{
 			//Add buttons that control the bools
 			string signature = metadata.GetSignature(UseVideo, UseAudio, UseSubtitles, UseChapters);
-
-			//Console.WriteLine(signature);
 
 			if (!videoCategories.ContainsKey(signature))
 			{
@@ -204,7 +198,7 @@
 
 		if (!dirs.Contains(Path.Combine(fullPath, BDMV)))
 		{
-			Console.WriteLine("No BDMV Folder");
+			//Console.WriteLine("No BDMV Folder");
 			return false;
 		}
 
@@ -217,7 +211,7 @@
 
 		if (!dirs.Contains(Path.Combine(fullPath, STREAM)))
 		{
-			Console.WriteLine("No STREAM Folder");
+			//Console.WriteLine("No STREAM Folder");
 			return false;
 		}
 
@@ -259,18 +253,29 @@
 
 	private void GoToTranscode()
 	{
-		List<VideoCategoryMetadata> selectedCategories = new();
+		List<TranscodeJob> transcodeJobs = new();
 
 		foreach (string key in VideoCategories.Keys)
 		{
 			VideoCategories[key].CleanCategory();
 
-			if (VideoCategories[key].IsSelected)
-				selectedCategories.Add(VideoCategories[key]);
+			foreach (VideoMetadata metadata in VideoCategories[key].Metadata)
+			{
+				if (!metadata.IsSelected)
+					continue;
+
+				QueueService.EnqueueJob(new TranscodeJob()
+				{
+					Name = metadata.Name,
+					InputFilePath = metadata.FilePath,
+					OutputFilePath = Path.Combine(DefaultSettings.DefaultTranscodeDirectory, Path.GetFileName(metadata.FilePath)),
+					Args = metadata.GetTranscodeArgs(),
+					ThumbnailBase64 = metadata.ThumbnailBase64,
+					TranscodePreset = TranscodePreset
+				});
+			}
 		}
 
-		StateService.SelectedCategories = selectedCategories;
-		StateService.HandbrakePreset = TranscodePreset;
 		Nav.NavigateTo("/transcode");
 	}
 
@@ -307,8 +312,6 @@
 				Console.WriteLine($"  Channels: {audio.Channel} ({audio.StreamPosition})");
 				Console.WriteLine($"  Language: {audio.Language} ({audio.LanguageIetf})");
 				Console.WriteLine($"  Bitrate: {audio.Bitrate} bps");
-
-
 			}
 
 			// 4. Subtitle Track Details
