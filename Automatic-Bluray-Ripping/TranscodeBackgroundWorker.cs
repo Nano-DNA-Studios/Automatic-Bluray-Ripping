@@ -11,7 +11,7 @@ namespace Automatic_Bluray_Ripping
         private readonly SemaphoreSlim _signal = new(0);
 
         public event Action<double>? OnProgressUpdated;
-        public event Action? OnQueueChanged; // Alerts UI when item starts/completes
+        public event Action? OnQueueChanged;
         public double CurrentProgressPercent { get; private set; }
         public TranscodeJob? CurrentJob { get; private set; }
 
@@ -73,13 +73,8 @@ namespace Automatic_Bluray_Ripping
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            Console.WriteLine("Running");
-            Console.WriteLine(stoppingToken.IsCancellationRequested);
-
             while (!stoppingToken.IsCancellationRequested)
             {
-                Console.WriteLine("Running Loop");
-
                 try
                 {
                     // Wait until a job is added to the queue

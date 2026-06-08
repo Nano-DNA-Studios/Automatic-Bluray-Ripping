@@ -16,7 +16,15 @@ namespace Automatic_Bluray_Ripping
             builder.Services.AddScoped<DefaultSettings>();
 
             TranscodeQueueService transcodeQueue = new TranscodeQueueService();
+            OpticalDriveManager driveManager = new OpticalDriveManager();
+
+            _ = Task.Run(async () =>
+            {
+                await driveManager.ReadOpticalDrives();
+            });
+
             builder.Services.AddSingleton<TranscodeQueueService>(transcodeQueue);
+            builder.Services.AddSingleton<OpticalDriveManager>(driveManager);
             builder.Services.AddHostedService<TranscodeBackgroundWorker>(provider => new TranscodeBackgroundWorker(transcodeQueue));
 
             var app = builder.Build();

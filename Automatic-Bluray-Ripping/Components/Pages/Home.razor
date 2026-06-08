@@ -7,46 +7,28 @@
 
 <PageTitle>Transcode Configuration</PageTitle>
 
-@* <div style="display: flex; flex-direction: row; justify-content: flex-start; padding: 10px">
-	<div>
-		<div class="form-check m-3">
-			<input type="checkbox"
-				   class="form-check-input"
-				   id="useVideo"
-				   checked="@UseVideo"
-				   @onchange="(e) => { UseVideo = (bool)(e.Value ?? false); RecomputeCategories(e); }" />
-			<label class="form-check-label" for="useVideo">Sort By Video Streams</label>
-		</div>
-
-		<div class="form-check m-3">
-			<input type="checkbox"
-				   class="form-check-input"
-				   id="useAudio"
-				   checked="@UseAudio"
-				   @onchange="(e) => { UseAudio = (bool)(e.Value ?? false); RecomputeCategories(e); }" />
-			<label class="form-check-label" for="useAudio">Sort By Audio Streams</label>
-		</div>
+<div style="
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr ;
+    gap: 15px;
+width:fit-content;
+">
+	<div style="text-align: center; padding:10px; background-color: gray; border-radius: 10px;">
+		<img style ="width:200px; height:200px;" src="hdd.svg" />
+		<h2>Backup Bluray</h2>
 	</div>
-	<div>
-		<div class="form-check m-3">
-			<input type="checkbox"
-				   class="form-check-input"
-				   id="useSubtitle"
-				   checked="@UseSubtitles"
-				   @onchange="(e) => { UseSubtitles = (bool)(e.Value ?? false); RecomputeCategories(e); }" />
-			<label class="form-check-label" for="useSubtitle">Sort By Subtitle Streams</label>
-		</div>
 
-		<div class="form-check m-3">
-			<input type="checkbox"
-				   class="form-check-input"
-				   id="useChapters"
-				   checked="@UseChapters"
-				   @onchange="(e) => { UseChapters = (bool)(e.Value ?? false); RecomputeCategories(e); }" />
-			<label class="form-check-label" for="useChapters">Sort By Chapter Streams</label>
-		</div>
+	<div style="text-align: center; padding:10px; background-color: gray; border-radius: 10px;">
+		<img style="width:200px; height:200px;" src="file-video.svg" />
+		<h2>Make MKV</h2>
 	</div>
-</div> *@
+
+	<div style="text-align: center; padding:10px; background-color: gray; border-radius: 10px;">
+		<img style="width:200px; height:200px;" src="convert.svg" />
+		<h2>Configure Transcode</h2>
+	</div>
+
+</div>
 
 <div>
 	<div>

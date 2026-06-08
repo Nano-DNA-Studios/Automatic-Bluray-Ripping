@@ -1,0 +1,42 @@
+﻿@page "/makemkv"
+
+<h3>MakeMKV</h3>
+
+@code {
+
+
+
+	private bool IsBlurayBackup(string basePath)
+	{
+		string fullPath = basePath;
+		string[] dirs;
+
+		if (!Directory.Exists(fullPath))
+			return false;
+
+		dirs = Directory.GetDirectories(fullPath);
+
+		if (!dirs.Contains(Path.Combine(fullPath, BDMV)))
+		{
+			//Console.WriteLine("No BDMV Folder");
+			return false;
+		}
+
+		fullPath = Path.Combine(fullPath, BDMV);
+
+		if (!Directory.Exists(fullPath))
+			return false;
+
+		dirs = Directory.GetDirectories(fullPath);
+
+		if (!dirs.Contains(Path.Combine(fullPath, STREAM)))
+		{
+			//Console.WriteLine("No STREAM Folder");
+			return false;
+		}
+
+		return true;
+	}
+
+
+}

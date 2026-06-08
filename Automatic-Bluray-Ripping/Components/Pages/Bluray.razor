@@ -1,0 +1,131 @@
+﻿@page "/bluray"
+@rendermode InteractiveServer
+@inject OpticalDriveManager DriveManager
+
+@if (IsLoading)
+{
+	<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px;">
+		<div class="spinner"></div>
+		<p style="margin-top: 15px; font-weight: 500; color: #555;">Scanning hardware...</p>
+	</div>
+}
+
+@if (!IsLoading)
+{
+	@if (!DriveManager.IsLocked)
+	{
+		<div style="font-size:x-large">
+			<button @onclick="@ScanDrives">
+				Scan Drives
+			</button>
+			<button @onclick="@StartRips">
+				Rip Drives
+			</button>
+		</div>
+	}
+	
+	<div style="margin-top: 10px">
+
+		<h3>Optical Drives</h3>
+
+		@foreach (OpticalDrive drive in DriveManager.OpticalDrives)
+		{
+			<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width:fit-content; background-color: gray; border-radius: 10px; padding: 10px">
+				<span style="font-size:x-large">
+					(@drive.ID) -
+					<input @bind="@drive.DiscName" />
+					(@drive.DriveName)
+				</span>
+
+				<div style="display: flex; flex-direction: row; align-items: center; justify-content: center; width:100%; font-size: large; gap: 10px">
+					File Progress:
+					<progress style="flex-grow: 1" value="@drive.Progress" max="1" />
+				</div>
+
+				<div style="display: flex; flex-direction: row; align-items: center; justify-content: center; width:100%; font-size: large; gap: 10px">
+					All Files Progress:
+					<progress style="flex-grow: 1" value="@drive.GlobalProgress" max="1" />
+				</div>
+			</div>
+		}
+	</div>
+
+}
+
+<style>
+	.spinner {
+		width: 50px;
+		height: 50px;
+		border: 5px solid #f3f3f3;
+		border-top: 5px solid #007bff; /* Accent color matching your app */
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+	}
+
+	@@keyframes spin {
+		0% {
+			transform: rotate(0deg);
+		}
+
+		100% {
+			transform: rotate(360deg);
+		}
+	}
+</style>
+
+@code {
+
+	private bool IsLoading = false;
+
+	protected override async Task OnInitializedAsync()
+	{
+		DriveManager.OnProgressUpdated += UpdateProgress;
+
+		if (DriveManager.HasScanned)
+			return;
+
+		IsLoading = true;
+
+		_ = Task.Run(async () =>
+		{
+			await DriveManager.ReadOpticalDrives();
+			IsLoading = false;
+			await InvokeAsync(StateHasChanged);
+		});
+	}
+
+	private void ScanDrives()
+	{
+		IsLoading = true;
+
+		_ = Task.Run(async () =>
+		{
+			await DriveManager.ReadOpticalDrives();
+			IsLoading = false;
+			await InvokeAsync(StateHasChanged);
+		});
+	}
+
+	private void StartRips ()
+	{
+		_ = Task.Run(async () =>
+		{
+			await DriveManager.RipOpticalDiscs();
+			await InvokeAsync(StateHasChanged);
+		});
+	}
+
+	private void UpdateProgress()
+	{
+		InvokeAsync(() =>
+		{
+			StateHasChanged();
+		});
+	}
+
+	public void Dispose()
+	{
+		DriveManager.OnProgressUpdated -= UpdateProgress;
+	}
+
+}

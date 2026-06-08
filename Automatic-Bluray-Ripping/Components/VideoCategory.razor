@@ -3,31 +3,29 @@
 
 <details style="background-color: darkgray; padding: 10px; border-radius: 10px; margin: 10px">
 	<summary @onclick:stopPropagation="true">
-		<input type="checkbox"
-			   class="form-check-input"
-			   id="include"
-			   @bind="@Category.IsSelected"
-			   style="width: 30px; height:30px;" />
+			<input type="checkbox"
+				   class="form-check-input"
+				   id="include"
+				   @bind="@Category.IsSelected"
+				   style="width: 30px; height:30px;" />
 
-		<input value="@Category.Name" @onchange="(e) => { Category.Name = (string)(e.Value ?? string.Empty); }" />
-		(@Category.Metadata.Count Videos)
-
+			<input value="@Category.Name" @onchange="(e) => { Category.Name = (string)(e.Value ?? string.Empty); }" />
+			(@Category.Metadata.Count Videos)
+			<button style="margin: 10px;" @onclick="@ExecuteApplyAll">
+				Apply to All
+			</button>
 	</summary>
 
-	<div style="display: flex; flex-direction: row; justify-content: flex-start;padding: 10px; margin: 10px ">
-		<h2>Naming Pattern : </h2>
-		<input @bind="@Category.NamingPattern" style="width:90%;" />
-	</div>
+	<span style="margin: 10px; font-size: x-large" >
+		Naming Pattern : 
+		<input @bind="@Category.NamingPattern" style="flex-grow: 1;" />
+	</span>
 
 	<div style="display: flex; flex-direction: row; justify-content: flex-start; padding: 10px; gap: 40px; ">
-		<TrackCategory CategoryType="Audio" Category="@Category"/>
-		<TrackCategory CategoryType="Subtitle" Category="@Category"/>
-		<TrackCategory CategoryType="Chapter" Category="@Category"/>
-	</div> 
-
-	<button style="width: 100%; margin: 10px;" @onclick="@ExecuteApplyAll">
-		Apply to All
-	</button>
+		<TrackCategory CategoryType="Audio" Category="@Category" />
+		<TrackCategory CategoryType="Subtitle" Category="@Category" />
+		<TrackCategory CategoryType="Chapter" Category="@Category" />
+	</div>
 
 	<div>
 		@foreach (var metadata in Category.Metadata)
@@ -40,11 +38,6 @@
 @code {
 	[Parameter]
 	public VideoCategoryMetadata Category { get; set; } = new VideoCategoryMetadata("");
-
-	protected override async Task OnInitializedAsync()
-	{
-
-	}
 
 	private void ExecuteApplyAll()
 	{

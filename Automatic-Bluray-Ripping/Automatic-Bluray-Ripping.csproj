@@ -10,6 +10,19 @@
 
   <ItemGroup>
     <PackageReference Include="MediaInfo.Wrapper.Core" Version="26.1.0" />
+    <PackageReference Include="NanoDNA.ProcessRunner" Version="0.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="wwwroot\file-video.svg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\hdd.svg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\OpticalDriveIcon.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
