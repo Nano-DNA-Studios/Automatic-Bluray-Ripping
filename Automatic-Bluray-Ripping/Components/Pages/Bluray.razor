@@ -81,7 +81,7 @@
 	{
 		DriveManager.OnProgressUpdated += UpdateProgress;
 
-		if (DriveManager.HasScanned)
+		if (DriveManager.HasScanned || DriveManager.IsScanning)
 			return;
 
 		IsLoading = true;

@@ -1,42 +1,65 @@
 ﻿@page "/makemkv"
 
+@inject MakeMKVManager MKVManager
+
+<div style="font-size:x-large">
+	<button @onclick="@ScanBackups">
+		Scan Backups
+	</button>
+	<button @onclick="@CreateMKVs">
+		Make MKVs
+	</button>
+</div>
+
+
 <h3>MakeMKV</h3>
+
+@foreach (OpticalDiscBackup backup in MKVManager.DiscBackups)
+{
+	<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width:fit-content; background-color: gray; border-radius: 10px; padding: 10px">
+
+		<div>
+			<h2>
+				@backup.Name
+			</h2>
+			<p>
+				@backup.DirPath
+			</p>
+		</div>
+
+		<div style="display: flex; flex-direction: row; align-items: center; justify-content: center; width:100%; font-size: large; gap: 10px">
+			File Progress:
+			<progress style="flex-grow: 1" value="@backup.Progress" max="1" />
+		</div>
+
+		<div style="display: flex; flex-direction: row; align-items: center; justify-content: center; width:100%; font-size: large; gap: 10px">
+			All Files Progress:
+			<progress style="flex-grow: 1" value="@backup.GlobalProgress" max="1" />
+		</div>
+
+		@foreach (MKVFile file in backup.Files)
+		{
+			<div>
+				<h2>(@file.ID) - @file.Name</h2>
+				<h2>Duration : @file.Duration</h2>
+				<h2>Size : @file.Size</h2>
+				<h2>Chapter(s) : @file.Chapters</h2>
+			</div>
+		}
+
+
+	</div>
+}
 
 @code {
 
-
-
-	private bool IsBlurayBackup(string basePath)
+	private void ScanBackups()
 	{
-		string fullPath = basePath;
-		string[] dirs;
-
-		if (!Directory.Exists(fullPath))
-			return false;
-
-		dirs = Directory.GetDirectories(fullPath);
-
-		if (!dirs.Contains(Path.Combine(fullPath, BDMV)))
-		{
-			//Console.WriteLine("No BDMV Folder");
-			return false;
-		}
-
-		fullPath = Path.Combine(fullPath, BDMV);
-
-		if (!Directory.Exists(fullPath))
-			return false;
-
-		dirs = Directory.GetDirectories(fullPath);
-
-		if (!dirs.Contains(Path.Combine(fullPath, STREAM)))
-		{
-			//Console.WriteLine("No STREAM Folder");
-			return false;
-		}
-
-		return true;
+		MKVManager.ScanForBackups();
 	}
 
+	private void CreateMKVs()
+	{
 
+	}
 }

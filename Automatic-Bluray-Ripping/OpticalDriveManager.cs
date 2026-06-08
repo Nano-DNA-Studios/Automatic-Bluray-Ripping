@@ -80,6 +80,7 @@ namespace Automatic_Bluray_Ripping
         public OpticalDrive[] OpticalDrives { get; set; } = [];
 
         public bool HasScanned = false;
+        public bool IsScanning = false;
 
         public bool IsLocked = false;
 
@@ -90,6 +91,8 @@ namespace Automatic_Bluray_Ripping
         public async Task ReadOpticalDrives()
         {
             List<OpticalDrive> drives = new List<OpticalDrive>();
+
+            IsScanning = true;
 
             ProcessRunner process = new ProcessRunner("makemkvcon");
             string args = "-r --cache=1 info disc:9999";
@@ -121,6 +124,7 @@ namespace Automatic_Bluray_Ripping
             if (result.Status == ProcessStatus.Success)
                 this.OpticalDrives = drives.ToArray();
 
+            IsScanning = false;
             HasScanned = true;
         }
 
@@ -144,6 +148,11 @@ namespace Automatic_Bluray_Ripping
         public void RaiseProgressUpdate()
         {
             OnProgressUpdated?.Invoke();
+        }
+
+        public bool IsBusy(string name)
+        {
+           return OpticalDrives.Any(drive => drive.DiscName == name && drive.IsBusy);
         }
 
         //public async Task RipOpticalDisc(OpticalDrive drive, CancellationToken cancellationToken)

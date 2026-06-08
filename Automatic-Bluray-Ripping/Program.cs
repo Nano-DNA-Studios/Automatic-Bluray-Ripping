@@ -2,6 +2,16 @@ using Automatic_Bluray_Ripping.Components;
 
 namespace Automatic_Bluray_Ripping
 {
+    public static class AppServices
+    {
+        public static IServiceProvider? Provider { get; set; }
+
+        public static T? Get<T>() where T : class
+        {
+            return Provider?.GetService(typeof(T)) as T;
+        }
+    }
+
     public class Program
     {
         public static void Main(string[] args)
@@ -17,17 +27,22 @@ namespace Automatic_Bluray_Ripping
 
             TranscodeQueueService transcodeQueue = new TranscodeQueueService();
             OpticalDriveManager driveManager = new OpticalDriveManager();
+            MakeMKVManager mkvManager = new MakeMKVManager();
 
-            _ = Task.Run(async () =>
+            _ = Task.Run(() =>
             {
-                await driveManager.ReadOpticalDrives();
+                driveManager.ReadOpticalDrives();
+                mkvManager.ScanForBackups();
             });
 
             builder.Services.AddSingleton<TranscodeQueueService>(transcodeQueue);
             builder.Services.AddSingleton<OpticalDriveManager>(driveManager);
+            builder.Services.AddSingleton<MakeMKVManager>(mkvManager);
             builder.Services.AddHostedService<TranscodeBackgroundWorker>(provider => new TranscodeBackgroundWorker(transcodeQueue));
 
             var app = builder.Build();
+
+            AppServices.Provider = app.Services;
 
             // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
