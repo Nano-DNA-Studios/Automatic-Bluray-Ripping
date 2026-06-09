@@ -7,7 +7,6 @@
         Error
     }
 
-
     public class TranscodeJob
     {
         public string Name { get; set; }

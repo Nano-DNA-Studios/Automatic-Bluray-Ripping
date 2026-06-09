@@ -38,11 +38,6 @@
             Metadata.Add(metadata);
         }
 
-        public void CleanCategory ()
-        {
-            Metadata.RemoveAll(video => !video.IsSelected);
-        }
-
         public void ApplyStreamSelection ()
         {
             foreach(VideoMetadata metadata in Metadata)

@@ -116,6 +116,10 @@
 
 	protected override async Task OnInitializedAsync()
 	{
-		Metadata.ExtractThumbnailToBase64Async();
+		_ = Task.Run(async () =>
+		{
+			await Metadata.ExtractThumbnailToBase64Async();
+			StateHasChanged();
+		});
 	}
 }

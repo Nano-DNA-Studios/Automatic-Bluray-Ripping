@@ -1,4 +1,5 @@
 ﻿@page "/makemkv"
+@rendermode InteractiveServer
 
 @inject MakeMKVManager MKVManager
 
@@ -16,7 +17,7 @@
 
 @foreach (OpticalDiscBackup backup in MKVManager.DiscBackups)
 {
-	<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width:fit-content; background-color: gray; border-radius: 10px; padding: 10px">
+	<div style="display: flex; flex-direction: column; justify-content: center; width:fit-content; background-color: gray; border-radius: 10px; padding: 10px">
 
 		<div>
 			<h2>
@@ -28,30 +29,33 @@
 		</div>
 
 		<div style="display: flex; flex-direction: row; align-items: center; justify-content: center; width:100%; font-size: large; gap: 10px">
-			File Progress:
-			<progress style="flex-grow: 1" value="@backup.Progress" max="1" />
-		</div>
-
-		<div style="display: flex; flex-direction: row; align-items: center; justify-content: center; width:100%; font-size: large; gap: 10px">
 			All Files Progress:
 			<progress style="flex-grow: 1" value="@backup.GlobalProgress" max="1" />
 		</div>
 
 		@foreach (MKVFile file in backup.Files)
 		{
-			<div>
+			<div style="padding: 10px; border-radius:10px;" class="@(file.IsSelected ? "mkv-card selected" : "mkv-card unselected")" @onclick="(e) => { file.ToggleSelection(); }" @onclick:stopPropagation="true">
 				<h2>(@file.ID) - @file.Name</h2>
 				<h2>Duration : @file.Duration</h2>
 				<h2>Size : @file.Size</h2>
 				<h2>Chapter(s) : @file.Chapters</h2>
+
+				<div style="display: flex; flex-direction: row; align-items: center; justify-content: center; width:100%; font-size: large; gap: 10px">
+					File Progress:
+					<progress style="flex-grow: 1" value="@file.Progress" max="1" />
+				</div>
 			</div>
 		}
-
-
 	</div>
 }
 
 @code {
+
+	protected override void OnInitialized()
+	{
+		MKVManager.OnProgressUpdated += UpdateProgress;
+	}
 
 	private void ScanBackups()
 	{
@@ -60,6 +64,20 @@
 
 	private void CreateMKVs()
 	{
+		_ = Task.Run(()=> MKVManager.CreateMKVs());
+	}
 
+	public void Dispose()
+	{
+		Console.WriteLine("Dispose MKV");
+		MKVManager.OnProgressUpdated -= UpdateProgress;
+	}
+
+	private void UpdateProgress()
+	{
+		InvokeAsync(() =>
+		{
+			StateHasChanged();
+		});
 	}
 }

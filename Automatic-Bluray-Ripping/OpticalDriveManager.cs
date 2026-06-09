@@ -80,7 +80,7 @@ namespace Automatic_Bluray_Ripping
         public OpticalDrive[] OpticalDrives { get; set; } = [];
 
         public bool HasScanned = false;
-        public bool IsScanning = false;
+        public bool IsScanning { get; set; } = false;
 
         public bool IsLocked = false;
 
@@ -92,6 +92,7 @@ namespace Automatic_Bluray_Ripping
         {
             List<OpticalDrive> drives = new List<OpticalDrive>();
 
+            HasScanned = false;
             IsScanning = true;
 
             ProcessRunner process = new ProcessRunner("makemkvcon");
@@ -126,6 +127,8 @@ namespace Automatic_Bluray_Ripping
 
             IsScanning = false;
             HasScanned = true;
+
+            OnProgressUpdated?.Invoke();
         }
 
         public async Task RipOpticalDiscs()

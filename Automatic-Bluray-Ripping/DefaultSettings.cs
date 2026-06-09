@@ -4,11 +4,13 @@
     {
         public static string DefaultAudioCodec = "flac16";
 
-        public static string DefaultTranscodeDirectory = @"D:\NanoDNA Studios\Development\Automatic-Bluray-Ripping\Automatic-Bluray-Ripping\bin\Debug\net8.0\Blurays\Transcode";
+        public static string DefaultTranscodeDirectory = @"D:\NanoDNA Studios\Development\Automatic-Bluray-Ripping\Automatic-Bluray-Ripping\bin\Debug\net8.0\Transcodes";
 
         public static string DefaultRipDirectory = @"D:\NanoDNA Studios\Development\Automatic-Bluray-Ripping\Automatic-Bluray-Ripping\bin\Debug\net8.0\Rips";
 
         public static int MinVideoLength = 1;
+
+        public static string DefaultMKVDirectory = @"D:\NanoDNA Studios\Development\Automatic-Bluray-Ripping\Automatic-Bluray-Ripping\bin\Debug\net8.0\MKVs";
 
         public static Dictionary<string, string> AudioCodecs = new Dictionary<string, string>
         {

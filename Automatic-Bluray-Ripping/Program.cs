@@ -28,17 +28,21 @@ namespace Automatic_Bluray_Ripping
             TranscodeQueueService transcodeQueue = new TranscodeQueueService();
             OpticalDriveManager driveManager = new OpticalDriveManager();
             MakeMKVManager mkvManager = new MakeMKVManager();
+            TranscodeManager transcodeManager = new TranscodeManager(transcodeQueue);
 
             _ = Task.Run(() =>
             {
                 driveManager.ReadOpticalDrives();
                 mkvManager.ScanForBackups();
+                transcodeManager.LoadHandbrakePresets();
+                transcodeManager.ScanBackups();
             });
 
             builder.Services.AddSingleton<TranscodeQueueService>(transcodeQueue);
             builder.Services.AddSingleton<OpticalDriveManager>(driveManager);
             builder.Services.AddSingleton<MakeMKVManager>(mkvManager);
-            builder.Services.AddHostedService<TranscodeBackgroundWorker>(provider => new TranscodeBackgroundWorker(transcodeQueue));
+            builder.Services.AddSingleton<TranscodeManager>(transcodeManager);
+            builder.Services.AddHostedService<TranscodeManager>(provider => new TranscodeManager(transcodeQueue));
 
             var app = builder.Build();
 

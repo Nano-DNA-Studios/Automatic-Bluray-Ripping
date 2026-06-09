@@ -2,7 +2,7 @@
 @rendermode InteractiveServer
 @inject OpticalDriveManager DriveManager
 
-@if (IsLoading)
+@if (DriveManager.IsScanning)
 {
 	<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px;">
 		<div class="spinner"></div>
@@ -10,7 +10,7 @@
 	</div>
 }
 
-@if (!IsLoading)
+@if (DriveManager.HasScanned)
 {
 	@if (!DriveManager.IsLocked)
 	{
@@ -49,7 +49,6 @@
 			</div>
 		}
 	</div>
-
 }
 
 <style>
@@ -75,7 +74,7 @@
 
 @code {
 
-	private bool IsLoading = false;
+	//private bool IsLoading = false;
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -84,25 +83,18 @@
 		if (DriveManager.HasScanned || DriveManager.IsScanning)
 			return;
 
-		IsLoading = true;
-
 		_ = Task.Run(async () =>
 		{
 			await DriveManager.ReadOpticalDrives();
-			IsLoading = false;
 			await InvokeAsync(StateHasChanged);
 		});
 	}
 
 	private void ScanDrives()
 	{
-		IsLoading = true;
-
 		_ = Task.Run(async () =>
 		{
 			await DriveManager.ReadOpticalDrives();
-			IsLoading = false;
-			await InvokeAsync(StateHasChanged);
 		});
 	}
 
@@ -125,6 +117,7 @@
 
 	public void Dispose()
 	{
+		Console.WriteLine("Dispose Bluray");
 		DriveManager.OnProgressUpdated -= UpdateProgress;
 	}
 

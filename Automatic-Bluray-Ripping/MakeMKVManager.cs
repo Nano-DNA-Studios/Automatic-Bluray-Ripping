@@ -19,13 +19,13 @@ namespace Automatic_Bluray_Ripping
 
         public bool IsSelected { get; set; }
 
+        public double Progress { get; set; }
+
         public void ToggleSelection()
         {
             IsSelected = !IsSelected;
         }
     }
-
-
 
     public class OpticalDiscBackup
     {
@@ -35,8 +35,6 @@ namespace Automatic_Bluray_Ripping
         public string Name { get; set; }
 
         public string DirPath { get; set; }
-
-        public double Progress { get; set; }
 
         public double GlobalProgress { get; set; }
 
@@ -52,10 +50,7 @@ namespace Automatic_Bluray_Ripping
             Name = Path.GetFileName(dirPath) ?? "";
             DirPath = dirPath;
 
-            Progress = 0;
             GlobalProgress = 0;
-
-            _ = Task.Run(() => ExtractBackupInfo());
         }
 
         public bool IsBlurayBackup()
@@ -109,12 +104,11 @@ namespace Automatic_Bluray_Ripping
             return intCode == EndingCode;
         }
 
-        public async Task ExtractBackupInfo()
+        public void ExtractBackupInfo()
         {
             ProcessRunner process = new ProcessRunner("makemkvcon", workingDirectory: DefaultSettings.DefaultRipDirectory);
 
             string args = $"-r info file:{Name}/ --minlength={DefaultSettings.MinVideoLength}";
-
 
             List<MKVFile> files = new List<MKVFile>();
             List<Match> matches = new();
@@ -152,7 +146,8 @@ namespace Automatic_Bluray_Ripping
                             Name = matches[3].Groups["value"].Value,
                             IsSelected = true
                         };
-                    } else
+                    }
+                    else
                     {
                         file = new()
                         {
@@ -177,15 +172,61 @@ namespace Automatic_Bluray_Ripping
                 Files = files.ToArray();
         }
 
-        public async Task CreateMKV(CancellationToken cancellationToken)
+        public void CreateMKVs(CancellationToken cancellationToken, MakeMKVManager manager)
         {
+            double progress = 0;
+            double weight = 1 / (double)Files.Count();
 
+            foreach (MKVFile file in Files)
+            {
+                if (!file.IsSelected)
+                    continue;
+
+                ProcessRunner process = new ProcessRunner("makemkvcon", workingDirectory: DefaultSettings.DefaultRipDirectory);
+
+                string output = Path.Combine(DefaultSettings.DefaultMKVDirectory, Name);
+                string args = $"mkv file:{Name} {file.ID} \"{output}\" --cache=1024 --noscan --minlength={DefaultSettings.MinVideoLength} -r --progress=-same";
+
+                if (!Directory.Exists(output))
+                    Directory.CreateDirectory(output);
+
+                process.STDOutputReceived += (sender, args) =>
+                {
+                    if (string.IsNullOrEmpty(args.Data))
+                        return;
+
+                    string pattern = @"^PRGV:(?<currentProgress>\d+),(?<globalProgress>\d+),(?<total>\d+)";
+
+                    Match match = Regex.Match(args.Data, pattern);
+
+                    if (!match.Success)
+                        return;
+
+                    double total = double.Parse(match.Groups["total"].Value);
+                    double currentProgress = double.Parse(match.Groups["currentProgress"].Value) / total;
+                    double globalProgress = double.Parse(match.Groups["globalProgress"].Value) / total;
+
+                    GlobalProgress = progress + currentProgress * weight;
+                    file.Progress = currentProgress;
+                    manager.RaiseProgressUpdate();
+                };
+
+                ProcessResult result = process.Run(args).Content;
+
+                file.Progress = 1;
+                progress += weight;
+                manager.RaiseProgressUpdate();
+            }
         }
     }
 
     public class MakeMKVManager
     {
         public List<OpticalDiscBackup> DiscBackups = new();
+
+        public event Action? OnProgressUpdated;
+
+        public CancellationTokenSource TokenSrc = new();
 
         public void ScanForBackups()
         {
@@ -206,7 +247,27 @@ namespace Automatic_Bluray_Ripping
                 if (driveManager != null && driveManager.IsBusy(backup.Name))
                     continue;
 
+                _ = Task.Run(() =>
+                {
+                    backup.ExtractBackupInfo();
+                    RaiseProgressUpdate();
+                });
+
                 DiscBackups.Add(backup);
+                RaiseProgressUpdate();
+            }
+        }
+
+        public void RaiseProgressUpdate()
+        {
+            OnProgressUpdated?.Invoke();
+        }
+
+        public void CreateMKVs()
+        {
+            foreach (OpticalDiscBackup backup in DiscBackups)
+            {
+                backup.CreateMKVs(TokenSrc.Token, this);
             }
         }
     }

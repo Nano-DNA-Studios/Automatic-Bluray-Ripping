@@ -3,7 +3,6 @@
 @using MediaInfo;
 @using MediaInfo.Model;
 @inject NavigationManager Nav
-@inject TranscodeQueueService QueueService
 
 <PageTitle>Transcode Configuration</PageTitle>
 
@@ -14,7 +13,7 @@
 width:fit-content;
 ">
 	<div style="text-align: center; padding:10px; background-color: gray; border-radius: 10px;">
-		<img style ="width:200px; height:200px;" src="hdd.svg" />
+		<img style="width:200px; height:200px;" src="hdd.svg" />
 		<h2>Backup Bluray</h2>
 	</div>
 
@@ -27,10 +26,9 @@ width:fit-content;
 		<img style="width:200px; height:200px;" src="convert.svg" />
 		<h2>Configure Transcode</h2>
 	</div>
-
 </div>
 
-<div>
+@* <div>
 	<div>
 		<h3 for="formatSelect">Choose Transcode Preset:</h3>
 		<select id="formatSelect" class="form-control" @bind="TranscodePreset">
@@ -45,7 +43,7 @@ width:fit-content;
 	<button style="width: 100%; padding: 10px; margin-top: 10px" @onclick="@GoToTranscode">
 		Transcode
 	</button>
-</div>
+</div> *@
 
 @foreach (var category in VideoCategories.Values)
 {
@@ -53,6 +51,8 @@ width:fit-content;
 }
 
 @code {
+
+	//Change this page to show progress of everything and other stats
 
 	string exeDir = Path.GetDirectoryName(Environment.ProcessPath);
 
@@ -85,41 +85,41 @@ width:fit-content;
 		if (VideoCategories.Count > 0) return;
 
 		VideoCategories = new Dictionary<string, VideoCategoryMetadata>();
-		Metadata = GetVideoMetadata(mkvDir);
-		Presets = GetHandbrakePresets();
+		// Metadata = GetVideoMetadata(mkvDir);
+		// Presets = GetHandbrakePresets();
 
-		ComputeCategories();
+		// ComputeCategories();
 
-		directoryPath = Path.Combine(exeDir, directoryPath);
+		// directoryPath = Path.Combine(exeDir, directoryPath);
 
-		if (!Directory.Exists(directoryPath))
-		{
-			Console.WriteLine("Directory Doesn't Exist");
-			return;
-		}
+		// if (!Directory.Exists(directoryPath))
+		// {
+		// 	Console.WriteLine("Directory Doesn't Exist");
+		// 	return;
+		// }
 
-		string[] dirs = Directory.EnumerateDirectories(directoryPath).ToArray();
+		// string[] dirs = Directory.EnumerateDirectories(directoryPath).ToArray();
 
-		foreach (string dir in dirs)
-		{
-			if (!IsBlurayBackup(dir))
-			{
-				//Just read the Files / find all video files? (Search for .mkv only?)
-				Console.WriteLine("The Directory is not a Bluray");
-				continue;
-			}
+		// foreach (string dir in dirs)
+		// {
+		// 	if (!IsBlurayBackup(dir))
+		// 	{
+		// 		Just read the Files / find all video files? (Search for .mkv only?)
+		// 		Console.WriteLine("The Directory is not a Bluray");
+		// 		continue;
+		// 	}
 
-			// foreach (string file in GetAllBlurayVideoFiles(GetBlurayStreamDir(dir)))
-			// {
-			// 	DisplayMediaInfo(file);
-			// }
+		// 	foreach (string file in GetAllBlurayVideoFiles(GetBlurayStreamDir(dir)))
+		// 	{
+		// 		DisplayMediaInfo(file);
+		// 	}
 
-			// foreach (string file in GetAllMKVFiles(mkvDir))
-			// {
-			// 	DisplayMediaInfo(file);
-			// }
-			//DisplayMediaInfo(mkvFile);
-		}
+		// 	foreach (string file in GetAllMKVFiles(mkvDir))
+		// 	{
+		// 		DisplayMediaInfo(file);
+		// 	}
+		// 	DisplayMediaInfo(mkvFile);
+		// }
 	}
 
 	private string[] GetHandbrakePresets()
@@ -233,33 +233,33 @@ width:fit-content;
 		return metadata.ToArray();
 	}
 
-	private void GoToTranscode()
-	{
-		List<TranscodeJob> transcodeJobs = new();
+	// private void GoToTranscode()
+	// {
+	// 	List<TranscodeJob> transcodeJobs = new();
 
-		foreach (string key in VideoCategories.Keys)
-		{
-			VideoCategories[key].CleanCategory();
+	// 	foreach (string key in VideoCategories.Keys)
+	// 	{
+	// 		VideoCategories[key].CleanCategory();
 
-			foreach (VideoMetadata metadata in VideoCategories[key].Metadata)
-			{
-				if (!metadata.IsSelected)
-					continue;
+	// 		foreach (VideoMetadata metadata in VideoCategories[key].Metadata)
+	// 		{
+	// 			if (!metadata.IsSelected)
+	// 				continue;
 
-				QueueService.EnqueueJob(new TranscodeJob()
-				{
-					Name = metadata.Name,
-					InputFilePath = metadata.FilePath,
-					OutputFilePath = Path.Combine(DefaultSettings.DefaultTranscodeDirectory, Path.GetFileName(metadata.Name) + ".mkv"),
-					Args = metadata.GetTranscodeArgs(),
-					ThumbnailBase64 = metadata.ThumbnailBase64,
-					TranscodePreset = TranscodePreset
-				});
-			}
-		}
+	// 			QueueService.EnqueueJob(new TranscodeJob()
+	// 			{
+	// 				Name = metadata.Name,
+	// 				InputFilePath = metadata.FilePath,
+	// 				OutputFilePath = Path.Combine(DefaultSettings.DefaultTranscodeDirectory, Path.GetFileName(metadata.Name) + ".mkv"),
+	// 				Args = metadata.GetTranscodeArgs(),
+	// 				ThumbnailBase64 = metadata.ThumbnailBase64,
+	// 				TranscodePreset = TranscodePreset
+	// 			});
+	// 		}
+	// 	}
 
-		Nav.NavigateTo("/transcode");
-	}
+	// 	Nav.NavigateTo("/transcode");
+	// }
 
 	private void DisplayMediaInfo(string filePath)
 	{
