@@ -13,7 +13,6 @@
     transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 
-    /* Changes colors slightly when a user hovers over it */
     .custom-form-control:hover {
         border-color: #b0b7bd;
     }

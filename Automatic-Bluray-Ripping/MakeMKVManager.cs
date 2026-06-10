@@ -1,7 +1,7 @@
 ﻿using NanoDNA.ProcessRunner;
+using NanoDNA.ProcessRunner.Enums;
 using NanoDNA.ProcessRunner.Results;
 using System.Text.RegularExpressions;
-using NanoDNA.ProcessRunner.Enums;
 
 namespace Automatic_Bluray_Ripping
 {
@@ -20,6 +20,17 @@ namespace Automatic_Bluray_Ripping
         public bool IsSelected { get; set; }
 
         public double Progress { get; set; }
+
+        public MKVFile()
+        {
+            ID = 0;
+            Name = string.Empty;
+            Chapters = 0;
+            Duration = string.Empty;
+            Size = string.Empty;
+            IsSelected = false;
+            Progress = 0;
+        }
 
         public void ToggleSelection()
         {
@@ -65,10 +76,7 @@ namespace Automatic_Bluray_Ripping
             dirs = Directory.GetDirectories(fullPath);
 
             if (!dirs.Contains(Path.Combine(fullPath, BDMV)))
-            {
-                //Console.WriteLine("No BDMV Folder");
                 return false;
-            }
 
             fullPath = Path.Combine(fullPath, BDMV);
 
@@ -78,17 +86,9 @@ namespace Automatic_Bluray_Ripping
             dirs = Directory.GetDirectories(fullPath);
 
             if (!dirs.Contains(Path.Combine(fullPath, STREAM)))
-            {
-                //Console.WriteLine("No STREAM Folder");
                 return false;
-            }
 
             return true;
-        }
-
-        public string GetBlurayStreamDir()
-        {
-            return Path.Combine(DirPath, BDMV, STREAM);
         }
 
         private bool IsValidCode(Match match)
@@ -112,7 +112,7 @@ namespace Automatic_Bluray_Ripping
             string args = $"-r info file:{Name}/ --minlength={DefaultSettings.MinVideoLength} --noscan";
 
             List<MKVFile> files = new List<MKVFile>();
-            List<Match> matches = new();
+            List<string> matches = new();
 
             process.STDOutputReceived += (sender, args) =>
             {
@@ -127,44 +127,28 @@ namespace Automatic_Bluray_Ripping
                     return;
 
                 if (IsValidCode(match))
-                    matches.Add(match);
+                    matches.Add(match.Groups["value"].Value);
 
-                if (IsEndCode(match))
+                if (!IsEndCode(match))
+                    return;
+
+                if (matches.Count < 3)
+                    return;
+
+                if (matches.Count == 3)
+                    matches.Insert(0, "1");
+
+                files.Add(new MKVFile()
                 {
-                    if (matches.Count < 3)
-                        return;
+                    ID = int.Parse(match.Groups["id"].Value),
+                    Chapters = int.Parse(matches[0]),
+                    Duration = matches[1],
+                    Size = matches[2],
+                    Name = matches[3],
+                    IsSelected = true
+                });
 
-                    MKVFile file;
-
-                    if (matches.Count == 4)
-                    {
-                        file = new()
-                        {
-                            ID = int.Parse(matches[0].Groups["id"].Value),
-                            Chapters = int.Parse(matches[0].Groups["value"].Value),
-                            Duration = matches[1].Groups["value"].Value,
-                            Size = matches[2].Groups["value"].Value,
-                            Name = matches[3].Groups["value"].Value,
-                            IsSelected = true
-                        };
-                    }
-                    else
-                    {
-                        file = new()
-                        {
-                            ID = int.Parse(matches[0].Groups["id"].Value),
-                            Chapters = 1,
-                            Duration = matches[0].Groups["value"].Value,
-                            Size = matches[1].Groups["value"].Value,
-                            Name = matches[2].Groups["value"].Value,
-                            IsSelected = true
-                        };
-                    }
-
-                    files.Add(file);
-
-                    matches = new();
-                }
+                matches = new List<string>();
             };
 
             ProcessResult result = (await process.RunAsync(args)).Content;
@@ -191,10 +175,23 @@ namespace Automatic_Bluray_Ripping
                 if (!Directory.Exists(output))
                     Directory.CreateDirectory(output);
 
+                bool isUnlocked = false;
+
                 process.STDOutputReceived += (sender, args) =>
                 {
                     if (string.IsNullOrEmpty(args.Data))
                         return;
+
+                    if (!isUnlocked)
+                    {
+                        string unlockPattern = @"^PRGC:(?<currentProgress>\d+),(?<globalProgress>\d+),""(?<value>[^""]+)""$";
+
+                        Match unlockMatch = Regex.Match(args.Data, unlockPattern);
+
+                        isUnlocked = unlockMatch.Success && unlockMatch.Groups["value"].Value == "Saving to MKV file";
+
+                        return;
+                    }
 
                     string pattern = @"^PRGV:(?<currentProgress>\d+),(?<globalProgress>\d+),(?<total>\d+)";
 

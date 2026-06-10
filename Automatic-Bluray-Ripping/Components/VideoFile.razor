@@ -2,7 +2,7 @@
 @using MediaInfo;
 @using MediaInfo.Model;
 
-<div style="margin: 10px;" class="@(Metadata.IsSelected ? "video-card selected" : "video-card unselected")" @onclick="(e) => { Metadata.IsSelected = !Metadata.IsSelected; }">
+<div style="margin: 10px;" class="@(@GetClass(Metadata.IsSelected))" @onclick="(e) => { Metadata.IsSelected = !Metadata.IsSelected; }">
 
 	<div style="display: flex; flex-direction: row; justify-content: flex-start; padding: 10px">
 		<div>
@@ -37,7 +37,7 @@
 
 				@foreach (VideoStreamItem videoStream in Metadata.VideoStreams)
 				{
-					<div style="margin-left: 20px; border-left: 2px solid #ccc; padding: 10px; " class="@(videoStream.IsSelected ? "video-card selected" : "video-card unselected")" @onclick="(e) => { videoStream.IsSelected = !videoStream.IsSelected; }" @onclick:stopPropagation="true">
+					<div style="margin-left: 20px; border-left: 2px solid #ccc; padding: 10px; " class="@GetClass(videoStream.IsSelected)" @onclick="(e) => { videoStream.IsSelected = !videoStream.IsSelected; }" @onclick:stopPropagation="true">
 						<h5>ID : @videoStream.ID</h5>
 						<h5>Resolution : @videoStream.Width x @videoStream.Height (@videoStream.FrameRate fps)</h5>
 						<h5>Codec : @videoStream.CodecName / @videoStream.Format</h5>
@@ -95,14 +95,13 @@
 
 					@foreach (ChapterStreamItem chapterStream in Metadata.ChapterStreams)
 					{
-						<div style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px; " class="@(chapterStream.IsSelected ? "video-card selected" : "video-card unselected")" @onclick="(e) => { chapterStream.IsSelected = !chapterStream.IsSelected; }" @onclick:stopPropagation="true">
+						<div style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px; " class="@GetClass(chapterStream.IsSelected)" @onclick="(e) => { chapterStream.IsSelected = !chapterStream.IsSelected; }" @onclick:stopPropagation="true">
 
 							<h5>ID : @chapterStream.ID</h5>
 							<h5>Name : @chapterStream.Name</h5>
 						</div>
 					}
 				</details>
-
 			</div>
 		}
 	</div>
@@ -113,12 +112,8 @@
 	[Parameter]
 	public VideoMetadata Metadata { get; set; } = new VideoMetadata("");
 
-	// protected override async Task OnInitializedAsync()
-	// {
-	// 	_ = Task.Run(() =>
-	// 	{
-	// 		Metadata.ExtractThumbnailToBase64Async();
-	// 		InvokeAsync(StateHasChanged);
-	// 	});
-	// }
+	private string GetClass(bool isSelected)
+	{
+		return isSelected ? "video-card selected" : "video-card unselected";
+	}
 }

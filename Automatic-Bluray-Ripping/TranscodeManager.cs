@@ -58,7 +58,6 @@ namespace Automatic_Bluray_Ripping
             {
                 try
                 {
-                    // Wait until a job is added to the queue
                     var job = await _queueService.DequeueJobAsync(stoppingToken);
 
                     Console.WriteLine($"Starting transcode job for: {job.InputFilePath}");
@@ -100,20 +99,21 @@ namespace Automatic_Bluray_Ripping
                 {
                     try
                     {
-                        if (!string.IsNullOrEmpty(e.Data) && e.Data.StartsWith("Encoding:"))
-                        {
-                            var match = Regex.Match(e.Data, @"(\d+(?:\.\d+)?)\s*%");
+                        if (string.IsNullOrEmpty(e.Data))
+                            return;
 
-                            if (match.Success)
-                            {
-                                string percentValue = match.Groups[1].Value;
+                        if (!e.Data.StartsWith("Encoding:"))
+                            return;
 
-                                if (double.TryParse(percentValue, out double percentDbl))
-                                {
-                                    _queueService.UpdateProgress(percentDbl);
-                                }
-                            }
-                        }
+                        Match match = Regex.Match(e.Data, @"(\d+(?:\.\d+)?)\s*%");
+
+                        if (!match.Success)
+                            return;
+
+                        string percentValue = match.Groups[1].Value;
+
+                        if (double.TryParse(percentValue, out double percentDbl))
+                            _queueService.UpdateProgress(percentDbl);
                     }
                     catch
                     {
@@ -130,16 +130,12 @@ namespace Automatic_Bluray_Ripping
                     }
                 };
 
-                // 2. Start the process
                 process.Start();
 
-                // 3. CRITICAL: Begin reading the streams asynchronously
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
 
-                // 4. Await the exit of the application safely
                 await process.WaitForExitAsync();
-
                 _queueService.UpdateProgress(100);
             }
         }

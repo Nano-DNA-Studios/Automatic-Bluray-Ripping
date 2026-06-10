@@ -12,6 +12,17 @@
 
         public static string DefaultMKVDirectory = @"D:\NanoDNA Studios\Development\Automatic-Bluray-Ripping\Automatic-Bluray-Ripping\bin\Debug\net8.0\MKVs";
 
+        public DefaultSettings ()
+        {
+            string? exePath = Environment.ProcessPath;
+
+            Console.WriteLine(exePath);
+
+            if (exePath == null)
+                return;
+
+        }
+
         public static Dictionary<string, string> AudioCodecs = new Dictionary<string, string>
         {
             // Encoding Options

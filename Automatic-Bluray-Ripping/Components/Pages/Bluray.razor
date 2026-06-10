@@ -23,7 +23,7 @@
 			</button>
 		</div>
 	}
-	
+
 	<div style="margin-top: 10px">
 
 		<h3>Optical Drives</h3>
@@ -51,27 +51,6 @@
 	</div>
 }
 
-<style>
-	.spinner {
-		width: 50px;
-		height: 50px;
-		border: 5px solid #f3f3f3;
-		border-top: 5px solid #007bff; /* Accent color matching your app */
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
-	@@keyframes spin {
-		0% {
-			transform: rotate(0deg);
-		}
-
-		100% {
-			transform: rotate(360deg);
-		}
-	}
-</style>
-
 @code {
 
 	protected override void OnInitialized()
@@ -84,13 +63,10 @@
 		await DriveManager.ReadOpticalDrives();
 	}
 
-	private void StartRips ()
+	private async Task StartRips()
 	{
-		_ = Task.Run(async () =>
-		{
-			await DriveManager.RipOpticalDiscs();
-			await InvokeAsync(StateHasChanged);
-		});
+		await DriveManager.RipOpticalDiscs();
+		await InvokeAsync(StateHasChanged);
 	}
 
 	private void UpdateProgress()
@@ -103,5 +79,4 @@
 		Console.WriteLine("Dispose Bluray");
 		DriveManager.OnProgressUpdated -= UpdateProgress;
 	}
-
 }

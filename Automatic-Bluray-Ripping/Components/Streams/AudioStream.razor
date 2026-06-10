@@ -22,7 +22,7 @@
 	<div style="display: flex; flex-direction: row; justify-content: flex-start; gap:10px" @onclick:stopPropagation="true">
 		<h5>Mixdown:</h5>
 		<select id="codecSelect" class="form-control" @bind="@Stream.Mixdown">
-			@foreach (string mixdown in Mixdowns)
+			@foreach (string mixdown in Stream.AllowableMixdowns)
 			{
 				<option value="@mixdown">@mixdown</option>
 			}
@@ -33,13 +33,6 @@
 
 @code {
 
-	private string[] Mixdowns = DefaultSettings.Mixdown.Values.ToArray();
-
 	[Parameter]
 	public AudioStreamItem Stream { get; set; } = new AudioStreamItem();
-
-	protected override async Task OnInitializedAsync()
-	{
-		Mixdowns = DefaultSettings.GetAllowableMixdowns(Stream.Channels);
-	}
 }

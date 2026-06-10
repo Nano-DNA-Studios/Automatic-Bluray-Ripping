@@ -29,7 +29,6 @@
 				@foreach (ChapterStreamItem chapterStream in Category.ChapterStreams)
 				{
 					<div style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px; " class="@(chapterStream.IsSelected ? "card selected" : "card unselected")" @onclick="(e) => { chapterStream.IsSelected = !chapterStream.IsSelected; Category.ApplyStreamSelection(); }" @onclick:stopPropagation="true">
-
 						<h5>ID : @chapterStream.ID</h5>
 						<h5>Name : @chapterStream.Name</h5>
 					</div>
@@ -50,7 +49,7 @@
 
 	private int Count = 0;
 
-	protected override async Task OnInitializedAsync()
+	protected override void OnInitialized()
 	{
 		if (CategoryType == "Video")
 			Count = Category.VideoStreams.Length;

@@ -36,7 +36,7 @@ namespace Automatic_Bluray_Ripping
             _ = Task.Run(async () =>
             {
                 await driveManager.ReadOpticalDrives();
-                mkvManager.ScanForBackups();
+                await mkvManager.ScanForBackups();
                 mediaScannerManager.LoadHandbrakePresets();
                 mediaScannerManager.ScanBackups();
 

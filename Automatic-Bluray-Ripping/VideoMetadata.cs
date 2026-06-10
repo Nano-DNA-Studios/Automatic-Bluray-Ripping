@@ -76,7 +76,6 @@ namespace Automatic_Bluray_Ripping
         {
             string args = "";
 
-            //Audio
             AudioStreamItem[] selectedAudio = AudioStreams.Where(s => s.IsSelected).ToArray();
 
             if (selectedAudio.Length > 0)
@@ -102,6 +101,7 @@ namespace Automatic_Bluray_Ripping
     public class VideoStreamItem
     {
         public int ID { get; set; }
+
         public bool IsSelected { get; set; }
 
         public int Width { get; set; }
@@ -128,32 +128,40 @@ namespace Automatic_Bluray_Ripping
             this.IsSelected = true;
         }
 
-        public string GetSignature()
-        {
-            return $"[{ID} | {Width}x{Height} | {FrameRate} | {CodecName} | {Format}]";
-        }
+        public string GetSignature() => $"[{ID} | {Width}x{Height} | {FrameRate} | {CodecName} | {Format}]";
     }
 
     public class AudioStreamItem
     {
         //Every Stream Has an Input + Output Subobject
-        public int ID { get; set; } = 0;
+        public int ID { get; set; }
         public bool IsSelected { get; set; }
 
         //Input Info
-        public string Format { get; set; } = "";
-        public int Channels { get; set; } = 0;
-        public string Language { get; set; } = "";
-        public double Bitrate { get; set; } = 0;
+        public string Format { get; set; } 
+        public int Channels { get; set; }
+        public string Language { get; set; } 
+        public double Bitrate { get; set; } 
 
         //Output Info
-        public string Name { get; set; } = "";
-        public string Codec { get; set; } = "";
-        public string Mixdown { get; set; } = "";
+        public string Name { get; set; }
+        public string Codec { get; set; } 
+        public string Mixdown { get; set; } 
+
+        public string[] AllowableMixdowns { get; set; }
 
         public AudioStreamItem()
         {
             this.ID = 0;
+            this.IsSelected = false;
+            this.Format = string.Empty;
+            this.Channels = 0;
+            this.Language = string.Empty;
+            this.Bitrate = 0;
+            this.Name = string.Empty;
+            this.Codec = string.Empty;
+            this.Mixdown = string.Empty;
+            this.AllowableMixdowns = [];
         }
 
         public AudioStreamItem(AudioStream audio, int id)
@@ -168,12 +176,10 @@ namespace Automatic_Bluray_Ripping
             this.Name = $"{this.Language} - {this.Format}";
             this.Codec = DefaultSettings.DefaultAudioCodec;
             this.Mixdown = DefaultSettings.GetMaxMixdown(Channels);
+            this.AllowableMixdowns = DefaultSettings.GetAllowableMixdowns(Channels);
         }
 
-        public string GetSignature()
-        {
-            return $"[{ID} | {Format} | {Channels} | {Language}]";
-        }
+        public string GetSignature() => $"[{ID} | {Format} | {Channels} | {Language}]";
 
         public void CopyOutputValues (AudioStreamItem stream)
         {
@@ -215,10 +221,7 @@ namespace Automatic_Bluray_Ripping
             this.Name = $"{Language} ({Format})";
         }
 
-        public string GetSignature()
-        {
-            return $"[{ID} | {Format} | {Language}]";
-        }
+        public string GetSignature() => $"[{ID} | {Format} | {Language}]";
 
         public void CopyOutputValues(SubtitleStreamItem stream)
         {
@@ -241,9 +244,6 @@ namespace Automatic_Bluray_Ripping
             this.IsSelected = true;
         }
 
-        public string GetSignature()
-        {
-            return $"[{ID} | {Name}]";
-        }
+        public string GetSignature() => $"[{ID} | {Name}]";
     }
 }
