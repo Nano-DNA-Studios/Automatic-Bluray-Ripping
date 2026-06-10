@@ -49,9 +49,7 @@ namespace Automatic_Bluray_Ripping
             string timeOffset = "00:01:00";
 
             if (metadata.Duration < 65)
-            {
-                timeOffset = "00:00:05";
-            }
+                timeOffset = "00:00:02";
 
             string arguments = $"-ss {timeOffset} -i \"{metadata.FilePath}\" -vframes 1 -f image2 -c:v mjpeg pipe:1";
 

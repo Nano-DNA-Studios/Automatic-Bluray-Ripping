@@ -40,9 +40,6 @@ namespace Automatic_Bluray_Ripping
 
     public class OpticalDiscBackup
     {
-        private const string BDMV = "BDMV";
-        private const string STREAM = "STREAM";
-
         public string Name { get; set; }
 
         public string DirPath { get; set; }
@@ -50,9 +47,6 @@ namespace Automatic_Bluray_Ripping
         public double GlobalProgress { get; set; }
 
         public bool IsBusy { get; set; }
-
-        private int[] ValidCodes = [8, 9, 10, 27];
-        private int EndingCode = 33;
 
         public MKVFile[] Files;
 
@@ -64,10 +58,77 @@ namespace Automatic_Bluray_Ripping
 
             GlobalProgress = 0;
         }
+    }
 
-        public bool IsBlurayBackup()
+    public class MakeMKVManager
+    {
+        private const string BDMV = "BDMV";
+        private const string STREAM = "STREAM";
+
+        private const int CHAPTER_CODE = 8;
+        private const int DURATION_CODE = 9;
+        private const int SIZE_CODE = 10;
+        private const int NAME_CODE = 27;
+        private const int ENDING_CODE = 33;
+
+        private int[] ValidCodes { get; }
+
+        private Regex UnlockRegex { get; }
+        private Regex ProgressRegex { get; }
+
+        public List<OpticalDiscBackup> DiscBackups { get; }
+
+        public CancellationTokenSource TokenSrc { get; }
+
+        public event Action? OnProgressUpdated;
+
+        public bool IsScanning { get; private set; }
+
+        public MakeMKVManager ()
         {
-            string fullPath = DirPath;
+            DiscBackups = new List<OpticalDiscBackup>();
+            TokenSrc = new CancellationTokenSource();
+
+            UnlockRegex = new(@"^PRGC:(?<currentProgress>\d+),(?<globalProgress>\d+),""(?<value>[^""]+)""$", RegexOptions.Compiled);
+            ProgressRegex = new(@"^PRGV:(?<currentProgress>\d+),(?<globalProgress>\d+),(?<total>\d+)", RegexOptions.Compiled);
+
+            ValidCodes = [CHAPTER_CODE, DURATION_CODE, SIZE_CODE, NAME_CODE];
+        }
+
+        public async Task ScanForBackups()
+        {
+            IsScanning = true;
+
+            OpticalDriveManager? driveManager = AppServices.Get<OpticalDriveManager>();
+
+            string[] dirs = Directory.EnumerateDirectories(DefaultSettings.DefaultRipDirectory).ToArray();
+
+            foreach (string dir in dirs)
+            {
+                OpticalDiscBackup backup = new OpticalDiscBackup(dir);
+
+                if (string.IsNullOrEmpty(backup.Name))
+                    continue;
+
+                if (!IsBlurayBackup(backup))
+                    continue;
+
+                if (driveManager != null && driveManager.IsBusy(backup.Name))
+                    continue;
+
+                DiscBackups.Add(backup);
+
+                await ExtractBackupInfo(backup, TokenSrc.Token);
+
+                RaiseProgressUpdate();
+            }
+
+            IsScanning = false;
+        }
+
+        public bool IsBlurayBackup(OpticalDiscBackup backup)
+        {
+            string fullPath = backup.DirPath;
             string[] dirs;
 
             if (!Directory.Exists(fullPath))
@@ -102,14 +163,14 @@ namespace Automatic_Bluray_Ripping
         {
             int intCode = int.Parse(match.Groups["code"].Value);
 
-            return intCode == EndingCode;
+            return intCode == ENDING_CODE;
         }
 
-        public async Task ExtractBackupInfo()
+        public async Task ExtractBackupInfo(OpticalDiscBackup backup, CancellationToken token)
         {
             ProcessRunner process = new ProcessRunner("makemkvcon", workingDirectory: DefaultSettings.DefaultRipDirectory);
 
-            string args = $"-r info file:{Name}/ --minlength={DefaultSettings.MinVideoLength} --noscan";
+            string args = $"-r info file:{backup.Name}/ --minlength={DefaultSettings.MinVideoLength} --noscan";
 
             List<MKVFile> files = new List<MKVFile>();
             List<string> matches = new();
@@ -154,103 +215,7 @@ namespace Automatic_Bluray_Ripping
             ProcessResult result = (await process.RunAsync(args)).Content;
 
             if (result.Status == ProcessStatus.Success)
-                Files = files.ToArray();
-        }
-
-        public async Task CreateMKVs(CancellationToken cancellationToken, MakeMKVManager manager)
-        {
-            double progress = 0;
-            double weight = 1 / (double)Files.Count();
-
-            foreach (MKVFile file in Files)
-            {
-                if (!file.IsSelected)
-                    continue;
-
-                ProcessRunner process = new ProcessRunner("makemkvcon", workingDirectory: DefaultSettings.DefaultRipDirectory);
-
-                string output = Path.Combine(DefaultSettings.DefaultMKVDirectory, Name);
-                string args = $"mkv file:{Name} {file.ID} \"{output}\" --cache=1024 --noscan --minlength={DefaultSettings.MinVideoLength} -r --progress=-same";
-
-                if (!Directory.Exists(output))
-                    Directory.CreateDirectory(output);
-
-                bool isUnlocked = false;
-
-                process.STDOutputReceived += (sender, args) =>
-                {
-                    if (string.IsNullOrEmpty(args.Data))
-                        return;
-
-                    if (!isUnlocked)
-                    {
-                        string unlockPattern = @"^PRGC:(?<currentProgress>\d+),(?<globalProgress>\d+),""(?<value>[^""]+)""$";
-
-                        Match unlockMatch = Regex.Match(args.Data, unlockPattern);
-
-                        isUnlocked = unlockMatch.Success && unlockMatch.Groups["value"].Value == "Saving to MKV file";
-
-                        return;
-                    }
-
-                    string pattern = @"^PRGV:(?<currentProgress>\d+),(?<globalProgress>\d+),(?<total>\d+)";
-
-                    Match match = Regex.Match(args.Data, pattern);
-
-                    if (!match.Success)
-                        return;
-
-                    double total = double.Parse(match.Groups["total"].Value);
-                    double currentProgress = double.Parse(match.Groups["currentProgress"].Value) / total;
-                    double globalProgress = double.Parse(match.Groups["globalProgress"].Value) / total;
-
-                    GlobalProgress = progress + currentProgress * weight;
-                    file.Progress = currentProgress;
-                    manager.RaiseProgressUpdate();
-                };
-
-                await process.RunAsync(args);
-
-                file.Progress = 1;
-                progress += weight;
-                manager.RaiseProgressUpdate();
-            }
-        }
-    }
-
-    public class MakeMKVManager
-    {
-        public List<OpticalDiscBackup> DiscBackups = new();
-
-        public event Action? OnProgressUpdated;
-
-        public CancellationTokenSource TokenSrc = new();
-
-        public async Task ScanForBackups()
-        {
-            OpticalDriveManager? driveManager = AppServices.Get<OpticalDriveManager>();
-
-            string[] dirs = Directory.EnumerateDirectories(DefaultSettings.DefaultRipDirectory).ToArray();
-
-            foreach (string dir in dirs)
-            {
-                OpticalDiscBackup backup = new OpticalDiscBackup(dir);
-
-                if (string.IsNullOrEmpty(backup.Name))
-                    continue;
-
-                if (!backup.IsBlurayBackup())
-                    continue;
-
-                if (driveManager != null && driveManager.IsBusy(backup.Name))
-                    continue;
-
-                DiscBackups.Add(backup);
-
-                await backup.ExtractBackupInfo();
-
-                RaiseProgressUpdate();
-            }
+                backup.Files = files.ToArray();
         }
 
         public void RaiseProgressUpdate()
@@ -258,12 +223,72 @@ namespace Automatic_Bluray_Ripping
             OnProgressUpdated?.Invoke();
         }
 
-        public async Task CreateMKVs()
+        public async Task MakeAllMKVs()
         {
             foreach (OpticalDiscBackup backup in DiscBackups)
             {
-                await backup.CreateMKVs(TokenSrc.Token, this);
+                await MakeMKVs(backup);
             }
+        }
+
+        public async Task MakeMKVs(OpticalDiscBackup backup)
+        {
+            MKVFile[] selectedFiles = backup.Files.Where((f) => f.IsSelected).ToArray();
+
+            double offset = 0;
+            double weight = 1 / (double)selectedFiles.Count();
+
+            foreach (MKVFile file in selectedFiles)
+            {
+                await MakeMKV(file, backup, offset, weight);
+
+                file.Progress = 1;
+                offset += weight;
+                RaiseProgressUpdate();
+            }
+        }
+
+        private async Task MakeMKV(MKVFile file, OpticalDiscBackup backup, double offset, double weight)
+        {
+            ProcessRunner process = new ProcessRunner("makemkvcon", workingDirectory: DefaultSettings.DefaultRipDirectory);
+
+            string output = Path.Combine(DefaultSettings.DefaultMKVDirectory, backup.Name);
+            string args = $"mkv file:{backup.Name} {file.ID} \"{output}\" --cache=1024 --noscan --minlength={DefaultSettings.MinVideoLength} -r --progress=-same";
+
+            bool isUnlocked = false;
+
+            if (!Directory.Exists(output))
+                Directory.CreateDirectory(output);
+
+            process.STDOutputReceived += (sender, args) =>
+            {
+                if (string.IsNullOrEmpty(args.Data))
+                    return;
+
+                if (!isUnlocked)
+                {
+                    Match unlockMatch = UnlockRegex.Match(args.Data);
+
+                    isUnlocked = unlockMatch.Success && unlockMatch.Groups["value"].Value == "Saving to MKV file";
+
+                    return;
+                }
+
+                Match match = ProgressRegex.Match(args.Data);
+
+                if (!match.Success)
+                    return;
+
+                double total = double.Parse(match.Groups["total"].Value);
+                double currentProgress = double.Parse(match.Groups["currentProgress"].Value) / total;
+
+                backup.GlobalProgress = offset + currentProgress * weight;
+                file.Progress = currentProgress;
+                RaiseProgressUpdate();
+            };
+
+            //Add the Cancellation token later
+            await process.RunAsync(args);
         }
     }
 }

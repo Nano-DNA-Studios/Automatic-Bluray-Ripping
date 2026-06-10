@@ -124,14 +124,10 @@ namespace Automatic_Bluray_Ripping
 
             string args = $"backup --decrypt --cache=1024 --noscan -r --progress=-same --minlength={DefaultSettings.MinVideoLength} disc:{drive.ID} \"{Path.Combine(DefaultSettings.DefaultRipDirectory, drive.DiscName)}\"";
 
-            Console.WriteLine($"Running : {args}");
-
             process.STDOutputReceived += (sender, args) =>
             {
                 if (string.IsNullOrEmpty(args.Data))
                     return;
-
-                Console.WriteLine(args.Data);
 
                 string pattern = @"^PRGV:(?<currentProgress>\d+),(?<globalProgress>\d+),(?<total>\d+)";
 

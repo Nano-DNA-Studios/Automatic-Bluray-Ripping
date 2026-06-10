@@ -1,16 +1,26 @@
 ﻿@page "/makemkv"
 @rendermode InteractiveServer
-
 @inject MakeMKVManager MKVManager
 
-<div style="font-size:x-large">
-	<button @onclick="@ScanBackups">
-		Scan Backups
-	</button>
-	<button @onclick="@CreateMKVs">
-		Make MKVs
-	</button>
-</div>
+@if (MKVManager.IsScanning)
+{
+	<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px;">
+		<div class="spinner"></div>
+		<p style="margin-top: 15px; font-weight: 500; color: #555;">Scanning hardware...</p>
+	</div>
+}
+
+@if (!MKVManager.IsScanning)
+{
+	<div style="font-size:x-large">
+		<button @onclick="@ScanBackups">
+			Scan Backups
+		</button>
+		<button @onclick="@MakeMKVs">
+			Make MKVs
+		</button>
+	</div>
+}
 
 <h3>MakeMKV</h3>
 
@@ -64,9 +74,9 @@
 		await MKVManager.ScanForBackups();
 	}
 
-	private async Task CreateMKVs()
+	private async Task MakeMKVs()
 	{
-		await MKVManager.CreateMKVs();
+		await MKVManager.MakeAllMKVs();
 	}
 
 	public void Dispose()
