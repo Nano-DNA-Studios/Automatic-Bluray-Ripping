@@ -23,6 +23,16 @@
 
         public string ThumbnailBase64 { get; set; }
 
+        public TranscodeJob ()
+        {
+            Name = string.Empty;
+            TranscodePreset = string.Empty;
+            InputFilePath = string.Empty;
+            OutputFilePath = string.Empty;
+            Args = string.Empty;
+            ThumbnailBase64 = string.Empty;
+        }
+
         public string GetFullArgument ()
         {
             return $"--preset-import-file \"{TranscodePreset}\" -Z \"{Path.GetFileNameWithoutExtension(TranscodePreset)}\" -i \"{InputFilePath}\" -o \"{OutputFilePath}\"{Args}";

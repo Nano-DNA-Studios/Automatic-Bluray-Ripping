@@ -43,12 +43,13 @@ namespace Automatic_Bluray_Ripping
         private int[] ValidCodes = [8, 9, 10, 27];
         private int EndingCode = 33;
 
-        public MKVFile[] Files = [];
+        public MKVFile[] Files;
 
         public OpticalDiscBackup(string dirPath)
         {
             Name = Path.GetFileName(dirPath) ?? "";
             DirPath = dirPath;
+            Files = [];
 
             GlobalProgress = 0;
         }
@@ -104,11 +105,11 @@ namespace Automatic_Bluray_Ripping
             return intCode == EndingCode;
         }
 
-        public void ExtractBackupInfo()
+        public async Task ExtractBackupInfo()
         {
             ProcessRunner process = new ProcessRunner("makemkvcon", workingDirectory: DefaultSettings.DefaultRipDirectory);
 
-            string args = $"-r info file:{Name}/ --minlength={DefaultSettings.MinVideoLength}";
+            string args = $"-r info file:{Name}/ --minlength={DefaultSettings.MinVideoLength} --noscan";
 
             List<MKVFile> files = new List<MKVFile>();
             List<Match> matches = new();
@@ -166,13 +167,13 @@ namespace Automatic_Bluray_Ripping
                 }
             };
 
-            ProcessResult result = process.Run(args).Content;
+            ProcessResult result = (await process.RunAsync(args)).Content;
 
             if (result.Status == ProcessStatus.Success)
                 Files = files.ToArray();
         }
 
-        public void CreateMKVs(CancellationToken cancellationToken, MakeMKVManager manager)
+        public async Task CreateMKVs(CancellationToken cancellationToken, MakeMKVManager manager)
         {
             double progress = 0;
             double weight = 1 / (double)Files.Count();
@@ -211,7 +212,7 @@ namespace Automatic_Bluray_Ripping
                     manager.RaiseProgressUpdate();
                 };
 
-                ProcessResult result = process.Run(args).Content;
+                await process.RunAsync(args);
 
                 file.Progress = 1;
                 progress += weight;
@@ -228,7 +229,7 @@ namespace Automatic_Bluray_Ripping
 
         public CancellationTokenSource TokenSrc = new();
 
-        public void ScanForBackups()
+        public async Task ScanForBackups()
         {
             OpticalDriveManager? driveManager = AppServices.Get<OpticalDriveManager>();
 
@@ -247,13 +248,10 @@ namespace Automatic_Bluray_Ripping
                 if (driveManager != null && driveManager.IsBusy(backup.Name))
                     continue;
 
-                _ = Task.Run(() =>
-                {
-                    backup.ExtractBackupInfo();
-                    RaiseProgressUpdate();
-                });
-
                 DiscBackups.Add(backup);
+
+                await backup.ExtractBackupInfo();
+
                 RaiseProgressUpdate();
             }
         }
@@ -263,11 +261,11 @@ namespace Automatic_Bluray_Ripping
             OnProgressUpdated?.Invoke();
         }
 
-        public void CreateMKVs()
+        public async Task CreateMKVs()
         {
             foreach (OpticalDiscBackup backup in DiscBackups)
             {
-                backup.CreateMKVs(TokenSrc.Token, this);
+                await backup.CreateMKVs(TokenSrc.Token, this);
             }
         }
     }

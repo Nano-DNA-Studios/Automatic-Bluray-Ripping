@@ -74,28 +74,14 @@
 
 @code {
 
-	//private bool IsLoading = false;
-
-	protected override async Task OnInitializedAsync()
+	protected override void OnInitialized()
 	{
 		DriveManager.OnProgressUpdated += UpdateProgress;
-
-		if (DriveManager.HasScanned || DriveManager.IsScanning)
-			return;
-
-		_ = Task.Run(async () =>
-		{
-			await DriveManager.ReadOpticalDrives();
-			await InvokeAsync(StateHasChanged);
-		});
 	}
 
-	private void ScanDrives()
+	private async Task ScanDrives()
 	{
-		_ = Task.Run(async () =>
-		{
-			await DriveManager.ReadOpticalDrives();
-		});
+		await DriveManager.ReadOpticalDrives();
 	}
 
 	private void StartRips ()
@@ -109,10 +95,7 @@
 
 	private void UpdateProgress()
 	{
-		InvokeAsync(() =>
-		{
-			StateHasChanged();
-		});
+		InvokeAsync(StateHasChanged);
 	}
 
 	public void Dispose()

@@ -1,6 +1,4 @@
-﻿using MediaInfo;
-using MediaInfo.Model;
-using System.Diagnostics;
+﻿using MediaInfo.Model;
 
 namespace Automatic_Bluray_Ripping
 {
@@ -10,9 +8,11 @@ namespace Automatic_Bluray_Ripping
 
         public string Name { get; set; } = "";
 
-        public string Duration { get; set; } = "";
+        public int Duration { get; set; }
 
         public bool IsSelected { get; set; }
+
+        public string ThumbnailBase64 { get; set; }
 
         public VideoStreamItem[] VideoStreams { get; set; }
 
@@ -22,69 +22,23 @@ namespace Automatic_Bluray_Ripping
 
         public ChapterStreamItem[] ChapterStreams { get; set; }
 
-        public string ThumbnailBase64 { get; set; }
-
         public VideoMetadata(string filePath)
         {
+            IsSelected = true;
             FilePath = filePath;
             Name = Path.GetFileNameWithoutExtension(FilePath);
-            Duration = "";
-            IsSelected = true;
+            Duration = 0;
+            ThumbnailBase64 = "file-video.svg";
 
             VideoStreams = [];
             AudioStreams = [];
             SubtitleStreams = [];
             ChapterStreams = [];
-
-            ThumbnailBase64 = "images/placeholder.jpg";
-
-            ParseFile();
         }
 
-        private void ParseFile()
+        public string GetDuration()
         {
-            if (!File.Exists(FilePath))
-                return;
-
-
-            MediaInfoWrapper mediaFile = new MediaInfoWrapper(FilePath);
-
-            mediaFile.WriteInfo();
-
-            Duration = $"{TimeSpan.FromMilliseconds(mediaFile.Duration):hh\\:mm\\:ss}";
-
-            List<VideoStreamItem> videoStreams = new List<VideoStreamItem>();
-
-            foreach (var video in mediaFile.VideoStreams)
-            {
-                videoStreams.Add(new VideoStreamItem(video, mediaFile.Duration, videoStreams.Count + 1));
-            }
-
-            List<AudioStreamItem> audioStreams = new List<AudioStreamItem>();
-
-            foreach (var audio in mediaFile.AudioStreams)
-            {
-                audioStreams.Add(new AudioStreamItem(audio, audioStreams.Count + 1));
-            }
-
-            List<SubtitleStreamItem> subtitleStreams = new List<SubtitleStreamItem>();
-
-            foreach (var subtitle in mediaFile.Subtitles)
-            {
-                subtitleStreams.Add(new SubtitleStreamItem(subtitle, subtitleStreams.Count + 1));
-            }
-
-            List<ChapterStreamItem> chapterStreams = new List<ChapterStreamItem>();
-
-            foreach (var chapter in mediaFile.Chapters)
-            {
-                chapterStreams.Add(new ChapterStreamItem(chapter, chapterStreams.Count + 1));
-            }
-
-            VideoStreams = videoStreams.ToArray();
-            AudioStreams = audioStreams.ToArray();
-            SubtitleStreams = subtitleStreams.ToArray();
-            ChapterStreams = chapterStreams.ToArray();
+            return $"{TimeSpan.FromMilliseconds(Duration):hh\\:mm\\:ss}";
         }
 
         public string GetSignature(bool useVideo, bool useAudio, bool useSubtitles, bool useChapters)
@@ -116,62 +70,6 @@ namespace Automatic_Bluray_Ripping
             }
 
             return signature;
-        }
-
-        public async Task ExtractThumbnailToBase64Async()
-        {
-            if (!File.Exists(FilePath))
-                return;
-            
-            string timeOffset = "00:01:00";
-
-            try
-            {
-                if (TimeSpan.TryParse(this.Duration, out TimeSpan videoLength))
-                {
-                    if (videoLength.TotalSeconds <= 65)
-                        timeOffset = "00:00:02";
-                }
-            }
-            catch
-            {
-                // Fallback safety if string parsing fails
-                timeOffset = "00:00:01";
-            }
-
-            // Use the dynamic timeOffset in your arguments string
-            string arguments = $"-ss {timeOffset} -i \"{FilePath}\" -vframes 1 -f image2 -c:v mjpeg pipe:1";
-
-            ProcessStartInfo startInfo = new ProcessStartInfo
-            {
-                FileName = @"C:\FFmpeg\App\bin\ffmpeg.exe",
-                Arguments = arguments,
-                RedirectStandardOutput = true,
-                RedirectStandardError = false,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using (Process process = new Process { StartInfo = startInfo })
-            {
-                process.Start();
-
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    await process.StandardOutput.BaseStream.CopyToAsync(ms);
-                    await process.WaitForExitAsync();
-
-                    byte[] imageBytes = ms.ToArray();
-
-                    if (imageBytes.Length == 0 || process.ExitCode != 0)
-                    {
-                        Console.WriteLine($"Image Extraction failed for {Name}");
-                        return;
-                    }
-
-                    ThumbnailBase64 = $"data:image/jpeg;base64,{Convert.ToBase64String(imageBytes)}";
-                }
-            }
         }
 
         public string GetTranscodeArgs ()
@@ -217,7 +115,6 @@ namespace Automatic_Bluray_Ripping
         public string Format { get; set; }
 
         public string Duration { get; set; }
-
 
         public VideoStreamItem(VideoStream video, int duration, int id)
         {
@@ -302,6 +199,10 @@ namespace Automatic_Bluray_Ripping
         public SubtitleStreamItem()
         {
             this.ID = 0;
+            this.Name = "";
+            this.Format = "";
+            this.Language = "";
+            this.IsSelected= false;
         }
 
         public SubtitleStreamItem(SubtitleStream subtitle, int id)

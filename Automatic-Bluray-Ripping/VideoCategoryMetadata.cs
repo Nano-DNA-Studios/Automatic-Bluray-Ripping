@@ -20,9 +20,15 @@
 
         public VideoCategoryMetadata(string name)
         {
-            this.Name = name;
             this.IsSelected = true;
-            Metadata = new List<VideoMetadata>();
+            this.Name = name;
+            this.NamingPattern = string.Empty;
+            this.Metadata = new List<VideoMetadata>();
+            
+            VideoStreams = [];
+            AudioStreams = [];
+            SubtitleStreams = [];
+            ChapterStreams = [];
         }
 
         public void AddMetadata(VideoMetadata metadata)

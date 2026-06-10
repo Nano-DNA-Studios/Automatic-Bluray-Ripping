@@ -28,51 +28,6 @@ namespace Automatic_Bluray_Ripping
             Progress = 0;
             GlobalProgress = 0;
         }
-
-        public async Task RipOpticalDisc(CancellationToken cancellationToken, OpticalDriveManager manager)
-        {
-            IsBusy = true;
-
-            ProcessRunner process = new ProcessRunner("makemkvcon");
-
-            string args = $"backup --decrypt --cache=1024 --noscan -r --progress=-same --minlength={DefaultSettings.MinVideoLength} disc:{ID} \"{Path.Combine(DefaultSettings.DefaultRipDirectory, DiscName)}\"";
-
-            Console.WriteLine($"Running : {args}");
-
-            process.STDOutputReceived += (sender, args) =>
-            {
-                if (string.IsNullOrEmpty(args.Data))
-                    return;
-
-                Console.WriteLine(args.Data);
-
-                string pattern = @"^PRGV:(?<currentProgress>\d+),(?<globalProgress>\d+),(?<total>\d+)";
-
-                Match match = Regex.Match(args.Data, pattern);
-
-                if (!match.Success)
-                    return;
-
-                double total = double.Parse(match.Groups["total"].Value);
-                double currentProgress = double.Parse(match.Groups["currentProgress"].Value) / total;
-                double globalProgress = double.Parse(match.Groups["globalProgress"].Value) / total;
-
-                Progress = currentProgress;
-                GlobalProgress = globalProgress;
-                manager.RaiseProgressUpdate();
-            };
-
-            ProcessResult result = process.Run(args).Content;
-
-            if (result.Status == ProcessStatus.Success)
-            {
-                Progress = 1;
-                GlobalProgress = 1;
-                manager.RaiseProgressUpdate();
-            }
-
-            IsBusy = false;
-        }
     }
 
     public class OpticalDriveManager
@@ -120,7 +75,8 @@ namespace Automatic_Bluray_Ripping
                 drives.Add(new OpticalDrive(driveID, driveName, blurayName));
             };
 
-            ProcessResult result = process.Run(args).Content;
+            //Convert to Async with Cancellation token
+            ProcessResult result = (await process.RunAsync(args)).Content;
 
             if (result.Status == ProcessStatus.Success)
                 this.OpticalDrives = drives.ToArray();
@@ -128,7 +84,7 @@ namespace Automatic_Bluray_Ripping
             IsScanning = false;
             HasScanned = true;
 
-            OnProgressUpdated?.Invoke();
+            RaiseProgressUpdate();
         }
 
         public async Task RipOpticalDiscs()
@@ -139,13 +95,15 @@ namespace Automatic_Bluray_Ripping
 
             foreach (OpticalDrive drive in OpticalDrives)
             {
-                Task ripTask = drive.RipOpticalDisc(TokenSrc.Token, this);
+                Task ripTask = RipOpticalDisc(TokenSrc.Token, drive);
                 ripTasks.Add(ripTask);
             }
 
             await Task.WhenAll(ripTasks);
 
             IsLocked = false;
+
+            RaiseProgressUpdate();
         }
 
         public void RaiseProgressUpdate()
@@ -158,51 +116,50 @@ namespace Automatic_Bluray_Ripping
            return OpticalDrives.Any(drive => drive.DiscName == name && drive.IsBusy);
         }
 
-        //public async Task RipOpticalDisc(OpticalDrive drive, CancellationToken cancellationToken)
-        //{
-        //    ProcessRunner process = new ProcessRunner("makemkvcon");
+        public async Task RipOpticalDisc(CancellationToken cancellationToken, OpticalDrive drive)
+        {
+            drive.IsBusy = true;
 
-        //    string args = $"backup --decrypt --cache=1024 --noscan -r --progress=-same --min-length=1 disc:{drive.ID} \"{Path.Combine(DefaultSettings.DefaultRipDirectory, drive.DiscName)}\"";
+            ProcessRunner process = new ProcessRunner("makemkvcon");
 
-        //    Console.WriteLine($"Running : {args}");
+            string args = $"backup --decrypt --cache=1024 --noscan -r --progress=-same --minlength={DefaultSettings.MinVideoLength} disc:{drive.ID} \"{Path.Combine(DefaultSettings.DefaultRipDirectory, drive.DiscName)}\"";
 
-        //    process.STDOutputReceived += (sender, args) =>
-        //    {
-        //        if (string.IsNullOrEmpty(args.Data))
-        //            return;
+            Console.WriteLine($"Running : {args}");
 
-        //        Console.WriteLine(args.Data);
+            process.STDOutputReceived += (sender, args) =>
+            {
+                if (string.IsNullOrEmpty(args.Data))
+                    return;
 
-        //        string pattern = @"^PRGV:(?<currentProgress>\d+),(?<globalProgress>\d+),(?<total>\d+)";
+                Console.WriteLine(args.Data);
 
-        //        Match match = Regex.Match(args.Data, pattern);
+                string pattern = @"^PRGV:(?<currentProgress>\d+),(?<globalProgress>\d+),(?<total>\d+)";
 
-        //        if (!match.Success)
-        //            return;
+                Match match = Regex.Match(args.Data, pattern);
 
-        //        double total = double.Parse(match.Groups["total"].Value);
-        //        double currentProgress = double.Parse(match.Groups["currentProgress"].Value) / total;
-        //        double globalProgress = double.Parse(match.Groups["globalProgress"].Value) / total;
+                if (!match.Success)
+                    return;
 
-        //        drive.Progress = currentProgress;
-        //        drive.GlobalProgress = globalProgress;
+                double total = double.Parse(match.Groups["total"].Value);
+                double currentProgress = double.Parse(match.Groups["currentProgress"].Value) / total;
+                double globalProgress = double.Parse(match.Groups["globalProgress"].Value) / total;
 
-        //        OnProgressUpdated?.Invoke();
-        //    };
+                drive.Progress = currentProgress;
+                drive.GlobalProgress = globalProgress;
+                RaiseProgressUpdate();
+            };
 
-        //    process.STDErrorReceived += (sender, args) =>
-        //    {
-        //        Console.WriteLine(args.Data);
-        //    };
+            //Add the cancellation token here
+            ProcessResult result = (await process.RunAsync(args)).Content;
 
-        //    ProcessResult result = process.Run(args).Content;
+            if (result.Status == ProcessStatus.Success)
+            {
+                drive.Progress = 1;
+                drive.GlobalProgress = 1;
+                RaiseProgressUpdate();
+            }
 
-        //    if (result.Status == ProcessStatus.Success)
-        //    {
-        //        drive.Progress = 1;
-        //        drive.GlobalProgress = 1;
-        //        OnProgressUpdated?.Invoke();
-        //    }
-        //}
+            drive.IsBusy = false;
+        }
     }
 }

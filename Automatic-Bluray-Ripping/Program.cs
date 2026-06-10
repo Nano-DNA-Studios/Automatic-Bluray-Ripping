@@ -29,20 +29,29 @@ namespace Automatic_Bluray_Ripping
             OpticalDriveManager driveManager = new OpticalDriveManager();
             MakeMKVManager mkvManager = new MakeMKVManager();
             TranscodeManager transcodeManager = new TranscodeManager(transcodeQueue);
+            ThumbnailQueue thumbnailQueue = new ThumbnailQueue();
+            ThumbnailManager thumbnailManager = new ThumbnailManager(thumbnailQueue);
+            MediaScannerManager mediaScannerManager = new MediaScannerManager(thumbnailQueue, transcodeQueue);
 
-            _ = Task.Run(() =>
+            _ = Task.Run(async () =>
             {
-                driveManager.ReadOpticalDrives();
+                await driveManager.ReadOpticalDrives();
                 mkvManager.ScanForBackups();
-                transcodeManager.LoadHandbrakePresets();
-                transcodeManager.ScanBackups();
+                mediaScannerManager.LoadHandbrakePresets();
+                mediaScannerManager.ScanBackups();
+
+                //transcodeManager.LoadHandbrakePresets();
+                //transcodeManager.ScanBackups();
             });
 
             builder.Services.AddSingleton<TranscodeQueueService>(transcodeQueue);
             builder.Services.AddSingleton<OpticalDriveManager>(driveManager);
             builder.Services.AddSingleton<MakeMKVManager>(mkvManager);
             builder.Services.AddSingleton<TranscodeManager>(transcodeManager);
-            builder.Services.AddHostedService<TranscodeManager>(provider => new TranscodeManager(transcodeQueue));
+            builder.Services.AddSingleton<ThumbnailQueue>(thumbnailQueue);
+            builder.Services.AddSingleton<MediaScannerManager>(mediaScannerManager);
+            builder.Services.AddHostedService<TranscodeManager>(provider => transcodeManager);
+            builder.Services.AddHostedService<ThumbnailManager>(provider => thumbnailManager);
 
             var app = builder.Build();
 

@@ -15,40 +15,43 @@
 
 <h3>MakeMKV</h3>
 
-@foreach (OpticalDiscBackup backup in MKVManager.DiscBackups)
-{
-	<div style="display: flex; flex-direction: column; justify-content: center; width:fit-content; background-color: gray; border-radius: 10px; padding: 10px">
+<div style="display: flex; flex-direction: column; justify-content: flex-start; gap:10px;">
+	@foreach (OpticalDiscBackup backup in MKVManager.DiscBackups)
+	{
+		<div style="display: flex; flex-direction: column; justify-content: center; width:fit-content; background-color: gray; border-radius: 10px; padding: 10px">
 
-		<div>
-			<h2>
-				@backup.Name
-			</h2>
-			<p>
-				@backup.DirPath
-			</p>
-		</div>
-
-		<div style="display: flex; flex-direction: row; align-items: center; justify-content: center; width:100%; font-size: large; gap: 10px">
-			All Files Progress:
-			<progress style="flex-grow: 1" value="@backup.GlobalProgress" max="1" />
-		</div>
-
-		@foreach (MKVFile file in backup.Files)
-		{
-			<div style="padding: 10px; border-radius:10px;" class="@(file.IsSelected ? "mkv-card selected" : "mkv-card unselected")" @onclick="(e) => { file.ToggleSelection(); }" @onclick:stopPropagation="true">
-				<h2>(@file.ID) - @file.Name</h2>
-				<h2>Duration : @file.Duration</h2>
-				<h2>Size : @file.Size</h2>
-				<h2>Chapter(s) : @file.Chapters</h2>
-
-				<div style="display: flex; flex-direction: row; align-items: center; justify-content: center; width:100%; font-size: large; gap: 10px">
-					File Progress:
-					<progress style="flex-grow: 1" value="@file.Progress" max="1" />
-				</div>
+			<div>
+				<h2>
+					@backup.Name
+				</h2>
+				<p>
+					@backup.DirPath
+				</p>
 			</div>
-		}
-	</div>
-}
+
+			<div style="display: flex; flex-direction: row; align-items: center; justify-content: center; width:100%; font-size: large; gap: 10px">
+				All Files Progress:
+				<progress style="flex-grow: 1" value="@backup.GlobalProgress" max="1" />
+			</div>
+
+			@foreach (MKVFile file in backup.Files)
+			{
+				<div style="padding: 10px; border-radius:10px;" class="@(file.IsSelected ? "mkv-card selected" : "mkv-card unselected")" @onclick="(e) => { file.ToggleSelection(); }" @onclick:stopPropagation="true">
+					<h2>(@file.ID) - @file.Name</h2>
+					<h4>Duration : @file.Duration</h4>
+					<h4>Size : @file.Size</h4>
+					<h4>Chapter(s) : @file.Chapters</h4>
+
+					<div style="display: flex; flex-direction: row; align-items: center; justify-content: center; width:100%; font-size: large; gap: 10px">
+						File Progress:
+						<progress style="flex-grow: 1" value="@file.Progress" max="1" />
+					</div>
+				</div>
+			}
+		</div>
+	}
+</div>
+
 
 @code {
 
@@ -57,14 +60,14 @@
 		MKVManager.OnProgressUpdated += UpdateProgress;
 	}
 
-	private void ScanBackups()
+	private async Task ScanBackups()
 	{
-		MKVManager.ScanForBackups();
+		await MKVManager.ScanForBackups();
 	}
 
-	private void CreateMKVs()
+	private async Task CreateMKVs()
 	{
-		_ = Task.Run(()=> MKVManager.CreateMKVs());
+		await MKVManager.CreateMKVs();
 	}
 
 	public void Dispose()
@@ -75,9 +78,6 @@
 
 	private void UpdateProgress()
 	{
-		InvokeAsync(() =>
-		{
-			StateHasChanged();
-		});
+		InvokeAsync(StateHasChanged);
 	}
 }

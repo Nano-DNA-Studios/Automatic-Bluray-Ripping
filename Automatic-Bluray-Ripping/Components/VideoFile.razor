@@ -5,7 +5,6 @@
 <div style="margin: 10px;" class="@(Metadata.IsSelected ? "video-card selected" : "video-card unselected")" @onclick="(e) => { Metadata.IsSelected = !Metadata.IsSelected; }">
 
 	<div style="display: flex; flex-direction: row; justify-content: flex-start; padding: 10px">
-
 		<div>
 			<img src="@Metadata.ThumbnailBase64" alt="Video Thumbnail" style="width: 400px; height: auto; border-radius: 4px;" />
 		</div>
@@ -114,12 +113,12 @@
 	[Parameter]
 	public VideoMetadata Metadata { get; set; } = new VideoMetadata("");
 
-	protected override async Task OnInitializedAsync()
-	{
-		_ = Task.Run(async () =>
-		{
-			await Metadata.ExtractThumbnailToBase64Async();
-			StateHasChanged();
-		});
-	}
+	// protected override async Task OnInitializedAsync()
+	// {
+	// 	_ = Task.Run(() =>
+	// 	{
+	// 		Metadata.ExtractThumbnailToBase64Async();
+	// 		InvokeAsync(StateHasChanged);
+	// 	});
+	// }
 }

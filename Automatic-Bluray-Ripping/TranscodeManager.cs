@@ -3,59 +3,6 @@ using System.Text.RegularExpressions;
 
 namespace Automatic_Bluray_Ripping
 {
-    public class MKVBackup
-    {
-        public string Name { get; set; }
-
-        public string DirPath { get; set; }
-
-        public string TranscodePreset { get; set; }
-
-        public Dictionary<string, VideoCategoryMetadata> VideoCategories { get; set; }
-
-        public MKVBackup(string dirPath)
-        {
-            Name = Path.GetFileName(dirPath) ?? "";
-            DirPath = dirPath;
-            TranscodePreset = "";
-            VideoCategories = new Dictionary<string, VideoCategoryMetadata>();
-        }
-
-        public void ComputeCategories()
-        {
-            Console.WriteLine("Computing");
-            Dictionary<string, VideoCategoryMetadata> videoCategories = new Dictionary<string, VideoCategoryMetadata>();
-
-            int index = 1;
-
-            string[] MKVFiles = GetAllMKVFiles();
-
-            foreach (string MKVFile in MKVFiles)
-            {
-                VideoMetadata metadata = new VideoMetadata(MKVFile);
-
-                string signature = metadata.GetSignature(true, true, true, true);
-
-                if (!videoCategories.ContainsKey(signature))
-                {
-                    videoCategories.Add(signature, new VideoCategoryMetadata($"Category {index}"));
-                    index++;
-                }
-
-                videoCategories[signature].AddMetadata(metadata);
-            }
-
-            VideoCategories = videoCategories;
-        }
-
-        private string[] GetAllMKVFiles()
-        {
-            const string extension = "*.mkv";
-
-            return Directory.GetFiles(DirPath, extension);
-        }
-    }
-
     public class TranscodeManager : BackgroundService
     {
         public List<MKVBackup> Backups { get; set; }
@@ -71,44 +18,6 @@ namespace Automatic_Bluray_Ripping
             Backups = new List<MKVBackup>();
             Presets = [];
             _queueService = queueService;
-        }
-
-        public void LoadHandbrakePresets()
-        {
-            string fullPath = Path.GetDirectoryName(Environment.ProcessPath);
-            string presetDir = "HandbrakePresets";
-
-            if (!Directory.Exists(fullPath))
-                return;
-
-            fullPath = Path.Combine(fullPath, presetDir);
-
-            if (!Directory.Exists(fullPath))
-                return;
-
-            Presets = Directory.GetFiles(fullPath);
-        }
-
-        public void ScanBackups()
-        {
-            Backups = new List<MKVBackup>();
-
-            if (!Directory.Exists(DefaultSettings.DefaultMKVDirectory))
-            {
-                Console.WriteLine("Directory Doesn't Exist");
-                return;
-            }
-
-            string[] dirs = Directory.EnumerateDirectories(DefaultSettings.DefaultMKVDirectory).ToArray();
-
-            foreach (string dir in dirs)
-            {
-                MKVBackup backup = new MKVBackup(dir);
-
-                backup.ComputeCategories();
-
-                Backups.Add(backup);
-            }
         }
 
         public void AddToTranscodeQueue(MKVBackup backup)
@@ -166,10 +75,6 @@ namespace Automatic_Bluray_Ripping
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error occurred during transcoding background execution. {ex.Message}");
-                }
-                catch
-                {
-                    Console.WriteLine("Idk");
                 }
             }
         }
