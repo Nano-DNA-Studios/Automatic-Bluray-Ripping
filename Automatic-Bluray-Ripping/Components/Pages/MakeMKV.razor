@@ -2,65 +2,105 @@
 @rendermode InteractiveServer
 @inject MakeMKVManager MKVManager
 
-@if (MKVManager.IsScanning)
-{
-	<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px;">
-		<div class="spinner"></div>
-		<p style="margin-top: 15px; font-weight: 500; color: #555;">Scanning hardware...</p>
-	</div>
-}
-
-@if (!MKVManager.IsScanning)
-{
-	<div style="font-size:x-large">
-		<button @onclick="@ScanBackups">
-			Scan Backups
-		</button>
-		<button @onclick="@MakeMKVs">
-			Make MKVs
-		</button>
-	</div>
-}
-
-<h3>MakeMKV</h3>
-
 <div style="display: flex; flex-direction: column; justify-content: flex-start; gap:10px;">
-	@foreach (OpticalDiscBackup backup in MKVManager.DiscBackups)
+	<h3>Make MKVs</h3>
+
+	@if (MKVManager.IsScanning)
 	{
-		<div style="display: flex; flex-direction: column; justify-content: center; width:fit-content; background-color: gray; border-radius: 10px; padding: 10px">
-
-			<div>
-				<h2>
-					@backup.Name
-				</h2>
-				<p>
-					@backup.DirPath
-				</p>
-			</div>
-
-			<div style="display: flex; flex-direction: row; align-items: center; justify-content: center; width:100%; font-size: large; gap: 10px">
-				All Files Progress:
-				<progress style="flex-grow: 1" value="@backup.GlobalProgress" max="1" />
-			</div>
-
-			@foreach (MKVFile file in backup.Files)
-			{
-				<div style="padding: 10px; border-radius:10px;" class="@(file.IsSelected ? "mkv-card selected" : "mkv-card unselected")" @onclick="(e) => { file.ToggleSelection(); }" @onclick:stopPropagation="true">
-					<h2>(@file.ID) - @file.Name</h2>
-					<h4>Duration : @file.Duration</h4>
-					<h4>Size : @file.Size</h4>
-					<h4>Chapter(s) : @file.Chapters</h4>
-
-					<div style="display: flex; flex-direction: row; align-items: center; justify-content: center; width:100%; font-size: large; gap: 10px">
-						File Progress:
-						<progress style="flex-grow: 1" value="@file.Progress" max="1" />
-					</div>
-				</div>
-			}
+		<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px;">
+			<div class="spinner"></div>
+			<p style="margin-top: 15px; font-weight: 500; color: #555;">Scanning...</p>
 		</div>
 	}
-</div>
+	else
+	{
+		<div style="font-size:x-large">
+			<button @onclick="@ScanBackups">
+				Scan Backups
+			</button>
 
+			@if (!MKVManager.IsConverting)
+			{
+				<button @onclick="@MakeMKVs">
+					Make MKVs
+				</button>
+			}
+		</div>
+
+		@if (MKVManager.DiscBackups.Count == 0)
+		{
+			<h3>No Discs Ripped</h3>
+		}
+		else
+		{
+			@foreach (OpticalDiscBackup backup in MKVManager.DiscBackups)
+			{
+				<div style="display: flex; flex-direction: column; justify-content: center; width:fit-content; background-color: gray; border-radius: 10px; padding: 10px">
+
+					<details>
+						<summary style="list-style: none">
+							<h2>@backup.Name</h2>
+							<h3>@backup.Files.Length MKVs</h3>
+
+							@if (!backup.IsConverting)
+							{
+								<div style="display: flex; flex-direction: row; justify-content: flex-start; align-items:center; gap:10px;">
+									<input type="checkbox"
+										   class="form-check-input"
+										   id="delete-on-complete"
+										   @bind="@backup.RemoveOnCompletion"
+										   style="width: 30px; height:30px; margin:0px" />
+
+									<h3 style="margin:0px;">Delete on Completion</h3>
+								</div>
+
+								@if (!backup.IsScanning)
+								{
+									<button style="width:100%; padding: 10px; margin-top: 10px; margin-bottom:10px;" @onclick="() => MKVManager.MakeMKVs(backup)">
+										Make MKVs
+									</button>
+								}
+							}
+							else
+							{
+								<div style="display: flex; flex-direction: row; align-items: center; justify-content: center; width:100%; font-size: large; gap: 10px">
+									All Files Progress:
+									<progress style="flex-grow: 1" value="@backup.GlobalProgress" max="1" />
+								</div>
+							}
+						</summary>
+
+						@if (backup.IsScanning)
+						{
+							<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px;">
+								<div class="spinner"></div>
+								<p style="margin-top: 15px; font-weight: 500; color: #555;">Scanning...</p>
+							</div>
+						}
+
+						@foreach (MKVFile file in backup.Files)
+						{
+							<div style="padding: 10px; border-radius:10px;" class="@GetClass(file, backup)" @onclick="file.ToggleSelection" @onclick:stopPropagation="true">
+								<h2>(@file.ID) - @file.Name</h2>
+								<h4>Duration : @file.Duration</h4>
+								<h4>Size : @file.Size</h4>
+								<h4>Chapter(s) : @file.Chapters</h4>
+
+								@if (backup.IsConverting)
+								{
+									<div style="display: flex; flex-direction: row; align-items: center; justify-content: center; width:100%; font-size: large; gap: 10px">
+										Progress:
+										<progress style="flex-grow: 1" value="@file.Progress" max="1" />
+									</div>
+								}
+							</div>
+						}
+					</details>
+				</div>
+			}
+		}
+	}
+</div>
 
 @code {
 
@@ -88,5 +128,16 @@
 	private void UpdateProgress()
 	{
 		InvokeAsync(StateHasChanged);
+	}
+
+	private string GetClass(MKVFile file, OpticalDiscBackup backup)
+	{
+		if (backup.IsConverting)
+			return "mkv-card queued";
+
+		if (file.IsSelected)
+			return "mkv-card selected";
+
+		return "mkv-card unselected";
 	}
 }

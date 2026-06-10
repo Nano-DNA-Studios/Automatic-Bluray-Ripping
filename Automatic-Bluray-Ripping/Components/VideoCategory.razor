@@ -2,22 +2,22 @@
 @rendermode InteractiveServer
 
 <details style="background-color: darkgray; padding: 10px; border-radius: 10px; margin: 10px">
-	<summary @onclick:stopPropagation="true">
-			<input type="checkbox"
-				   class="form-check-input"
-				   id="include"
-				   @bind="@Category.IsSelected"
-				   style="width: 30px; height:30px;" />
+	<summary style="margin:10px" @onclick:stopPropagation="true">
+		<input type="checkbox"
+			   class="form-check-input"
+			   id="include"
+			   @bind="@Category.IsSelected"
+			   style="width: 30px; height:30px; margin:0px" />
 
-			<input value="@Category.Name" @onchange="(e) => { Category.Name = (string)(e.Value ?? string.Empty); }" />
-			(@Category.Metadata.Count Videos)
-			<button style="margin: 10px;" @onclick="@ExecuteApplyAll">
-				Apply to All
-			</button>
+		<input style="margin:0px" value="@Category.Name" @onchange="(e) => { Category.Name = (string)(e.Value ?? string.Empty); }" />
+		(@Category.Metadata.Count Videos)
+		<button style="margin:0px" @onclick="@ExecuteApplyAll">
+			Apply to All
+		</button>
 	</summary>
 
-	<span style="margin: 10px; font-size: x-large" >
-		Naming Pattern : 
+	<span style="margin: 10px; font-size: x-large">
+		Naming Pattern :
 		<input @bind="@Category.NamingPattern" style="flex-grow: 1;" />
 	</span>
 

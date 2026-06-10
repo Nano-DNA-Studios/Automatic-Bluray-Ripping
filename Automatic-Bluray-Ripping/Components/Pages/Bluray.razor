@@ -2,6 +2,8 @@
 @rendermode InteractiveServer
 @inject OpticalDriveManager DriveManager
 
+<h3>Optical Drives</h3>
+
 @if (DriveManager.IsScanning)
 {
 	<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px;">
@@ -25,8 +27,6 @@
 	}
 
 	<div style="margin-top: 10px">
-
-		<h3>Optical Drives</h3>
 
 		@foreach (OpticalDrive drive in DriveManager.OpticalDrives)
 		{

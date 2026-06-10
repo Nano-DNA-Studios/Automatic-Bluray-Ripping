@@ -1,4 +1,4 @@
-html, body {
+﻿html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
@@ -68,4 +68,11 @@ h1:focus {
     100% {
         transform: rotate(360deg);
     }
+}
+
+details summary {
+    list-style: none;
+    cursor: pointer;
+    align-self: flex-end;
+    
 }

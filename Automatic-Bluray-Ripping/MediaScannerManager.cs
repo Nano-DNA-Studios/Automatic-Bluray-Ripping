@@ -10,6 +10,8 @@ namespace Automatic_Bluray_Ripping
 
         public string TranscodePreset { get; set; }
 
+        public bool RemoveOnCompletion { get; set; }
+
         public Dictionary<string, VideoCategoryMetadata> VideoCategories { get; set; }
 
         public MKVBackup(string dirPath)
@@ -17,7 +19,18 @@ namespace Automatic_Bluray_Ripping
             Name = Path.GetFileName(dirPath) ?? "";
             DirPath = dirPath;
             TranscodePreset = "";
+            RemoveOnCompletion = true;
             VideoCategories = new Dictionary<string, VideoCategoryMetadata>();
+        }
+
+        public int GetTotalVideos ()
+        {
+            int total = 0;
+
+            foreach (VideoCategoryMetadata metadata in VideoCategories.Values)
+                total += metadata.Metadata.Count;
+
+            return total;
         }
     }
 
@@ -27,17 +40,32 @@ namespace Automatic_Bluray_Ripping
 
         public string[] Presets { get; set; }
 
+        public bool IsScanning { get; set; }
+
         private readonly ThumbnailQueue _thumbnailQueue;
 
         private readonly TranscodeQueueService _transcodeQueueService;
 
-        public MediaScannerManager(ThumbnailQueue thumbnailQueue, TranscodeQueueService transcodeQueueService)
+        private readonly MakeMKVManager _mkvManager;
+
+        public event Action? OnProgressUpdated;
+
+        public MediaScannerManager(MakeMKVManager mkvManager, ThumbnailQueue thumbnailQueue, TranscodeQueueService transcodeQueueService)
         {
             Backups = new List<MKVBackup>();
             Presets = [];
+            IsScanning = true;
 
+            _mkvManager = mkvManager;
             _thumbnailQueue = thumbnailQueue;
             _transcodeQueueService = transcodeQueueService;
+
+            _thumbnailQueue.OnProgressUpdated += Update;
+        }
+
+        private void Update()
+        {
+            OnProgressUpdated?.Invoke();
         }
 
         public void LoadHandbrakePresets()
@@ -57,10 +85,14 @@ namespace Automatic_Bluray_Ripping
                 return;
 
             Presets = Directory.GetFiles(fullPath);
+
+            Update();
         }
 
-        public void ScanBackups()
+        public void LoadMKVBackups()
         {
+            IsScanning = true;
+
             Backups = new List<MKVBackup>();
 
             if (!Directory.Exists(DefaultSettings.DefaultMKVDirectory))
@@ -70,10 +102,17 @@ namespace Automatic_Bluray_Ripping
             {
                 MKVBackup backup = new MKVBackup(dir);
 
+                if (_mkvManager.DiscBackups.Any((d) => d.Name == backup.Name))
+                    continue;
+
                 ComputeCategories(backup);
 
                 Backups.Add(backup);
             }
+
+            IsScanning = false;
+
+            Update();
         }
 
         public void ComputeCategories(MKVBackup backup)

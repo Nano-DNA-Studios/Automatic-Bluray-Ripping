@@ -1,6 +1,7 @@
 ﻿using NanoDNA.ProcessRunner;
 using NanoDNA.ProcessRunner.Enums;
 using NanoDNA.ProcessRunner.Results;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
 namespace Automatic_Bluray_Ripping
@@ -46,9 +47,13 @@ namespace Automatic_Bluray_Ripping
 
         public double GlobalProgress { get; set; }
 
-        public bool IsBusy { get; set; }
+        public bool IsScanning { get; set; }
 
-        public MKVFile[] Files;
+        public bool IsConverting { get; set; }
+
+        public MKVFile[] Files { get; set; }
+
+        public bool RemoveOnCompletion { get; set; }
 
         public OpticalDiscBackup(string dirPath)
         {
@@ -57,6 +62,9 @@ namespace Automatic_Bluray_Ripping
             Files = [];
 
             GlobalProgress = 0;
+            IsScanning = false;
+            IsConverting = false;
+            RemoveOnCompletion = true;
         }
     }
 
@@ -74,32 +82,49 @@ namespace Automatic_Bluray_Ripping
         private int[] ValidCodes { get; }
 
         private Regex UnlockRegex { get; }
+
         private Regex ProgressRegex { get; }
 
-        public List<OpticalDiscBackup> DiscBackups { get; }
+        private Regex TitleInfoRegex { get; }
+
+        public List<OpticalDiscBackup> DiscBackups { get; private set; }
 
         public CancellationTokenSource TokenSrc { get; }
 
-        public event Action? OnProgressUpdated;
-
         public bool IsScanning { get; private set; }
 
-        public MakeMKVManager ()
+        public bool IsConverting { get; private set; }
+
+        public event Action? OnProgressUpdated;
+
+        private OpticalDriveManager _opticalDriveManager;
+
+        public MakeMKVManager(OpticalDriveManager opticalDriveManager)
         {
             DiscBackups = new List<OpticalDiscBackup>();
             TokenSrc = new CancellationTokenSource();
 
             UnlockRegex = new(@"^PRGC:(?<currentProgress>\d+),(?<globalProgress>\d+),""(?<value>[^""]+)""$", RegexOptions.Compiled);
             ProgressRegex = new(@"^PRGV:(?<currentProgress>\d+),(?<globalProgress>\d+),(?<total>\d+)", RegexOptions.Compiled);
+            TitleInfoRegex = new(@"^TINFO:(?<id>\d+),(?<code>\d+),(?<idVal>\d+),""(?<value>[^""]*)""", RegexOptions.Compiled);
 
             ValidCodes = [CHAPTER_CODE, DURATION_CODE, SIZE_CODE, NAME_CODE];
+
+            IsScanning = true;
+
+            _opticalDriveManager = opticalDriveManager;
+        }
+
+        private bool InProgress(OpticalDiscBackup backup)
+        {
+            return DiscBackups.Any((d) => d.Name == backup.Name);
         }
 
         public async Task ScanForBackups()
         {
             IsScanning = true;
 
-            OpticalDriveManager? driveManager = AppServices.Get<OpticalDriveManager>();
+            DiscBackups = DiscBackups.Where((d) => d.IsConverting).ToList();
 
             string[] dirs = Directory.EnumerateDirectories(DefaultSettings.DefaultRipDirectory).ToArray();
 
@@ -110,20 +135,26 @@ namespace Automatic_Bluray_Ripping
                 if (string.IsNullOrEmpty(backup.Name))
                     continue;
 
+                if (InProgress(backup))
+                    continue;
+
                 if (!IsBlurayBackup(backup))
                     continue;
 
-                if (driveManager != null && driveManager.IsBusy(backup.Name))
+                if (_opticalDriveManager.IsBusy(backup.Name))
                     continue;
 
+                backup.IsScanning = true;
+
                 DiscBackups.Add(backup);
-
-                await ExtractBackupInfo(backup, TokenSrc.Token);
-
-                RaiseProgressUpdate();
             }
 
+            foreach (OpticalDiscBackup backup in DiscBackups)
+                await ExtractBackupInfo(backup, TokenSrc.Token);
+
             IsScanning = false;
+
+            RaiseProgressUpdate();
         }
 
         public bool IsBlurayBackup(OpticalDiscBackup backup)
@@ -168,21 +199,21 @@ namespace Automatic_Bluray_Ripping
 
         public async Task ExtractBackupInfo(OpticalDiscBackup backup, CancellationToken token)
         {
+            backup.IsScanning = true;
+
+            List<MKVFile> files = new List<MKVFile>();
+            List<string> matches = new List<string>();
+
             ProcessRunner process = new ProcessRunner("makemkvcon", workingDirectory: DefaultSettings.DefaultRipDirectory);
 
             string args = $"-r info file:{backup.Name}/ --minlength={DefaultSettings.MinVideoLength} --noscan";
-
-            List<MKVFile> files = new List<MKVFile>();
-            List<string> matches = new();
 
             process.STDOutputReceived += (sender, args) =>
             {
                 if (string.IsNullOrEmpty(args.Data))
                     return;
 
-                string pattern = @"^TINFO:(?<id>\d+),(?<code>\d+),(?<idVal>\d+),""(?<value>[^""]*)""";
-
-                Match match = Regex.Match(args.Data, pattern);
+                Match match = TitleInfoRegex.Match(args.Data);
 
                 if (!match.Success)
                     return;
@@ -216,6 +247,10 @@ namespace Automatic_Bluray_Ripping
 
             if (result.Status == ProcessStatus.Success)
                 backup.Files = files.ToArray();
+
+            backup.IsScanning = false;
+
+            RaiseProgressUpdate();
         }
 
         public void RaiseProgressUpdate()
@@ -225,20 +260,30 @@ namespace Automatic_Bluray_Ripping
 
         public async Task MakeAllMKVs()
         {
+            IsConverting = true;
+
+            foreach (OpticalDiscBackup backup in DiscBackups)
+                backup.IsConverting = true;
+
             foreach (OpticalDiscBackup backup in DiscBackups)
             {
                 await MakeMKVs(backup);
+                backup.IsConverting = false;
             }
+
+            IsConverting = false;
         }
 
         public async Task MakeMKVs(OpticalDiscBackup backup)
         {
-            MKVFile[] selectedFiles = backup.Files.Where((f) => f.IsSelected).ToArray();
+            backup.IsConverting = true;
+
+            backup.Files = backup.Files.Where((f) => f.IsSelected).ToArray();
 
             double offset = 0;
-            double weight = 1 / (double)selectedFiles.Count();
+            double weight = 1 / (double)backup.Files.Count();
 
-            foreach (MKVFile file in selectedFiles)
+            foreach (MKVFile file in backup.Files)
             {
                 await MakeMKV(file, backup, offset, weight);
 
@@ -246,6 +291,11 @@ namespace Automatic_Bluray_Ripping
                 offset += weight;
                 RaiseProgressUpdate();
             }
+
+            backup.IsConverting = false;
+
+            if (backup.RemoveOnCompletion)
+                RemoveOpticalDiscBackup(backup);
         }
 
         private async Task MakeMKV(MKVFile file, OpticalDiscBackup backup, double offset, double weight)
@@ -289,6 +339,13 @@ namespace Automatic_Bluray_Ripping
 
             //Add the Cancellation token later
             await process.RunAsync(args);
+        }
+
+        private void RemoveOpticalDiscBackup(OpticalDiscBackup backup)
+        {
+            Directory.Delete(backup.DirPath, true);
+
+            DiscBackups.Remove(backup);
         }
     }
 }

@@ -6,35 +6,99 @@
 
 <h3>Configure Transcode</h3>
 
-<div style="display: flex; flex-direction: column; justify-content: flex-start;gap:10px;">
-	@foreach (MKVBackup backup in Manager.Backups)
-	{
-		<div style="padding: 10px; border-radius: 10px; background-color:lightblue;">
-			<div>
-				<div>
-					<h3>@backup.Name</h3>
+@if (Manager.IsScanning)
+{
+	<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px;">
+		<div class="spinner"></div>
+		<p style="margin-top: 15px; font-weight: 500; color: #555;">Scanning...</p>
+	</div>
+}
+else
+{
+	<div style="display: flex; flex-direction: column; justify-content: flex-start;gap:10px;">
 
-					<div style="display: flex; flex-direction: row; justify-content: flex-start; gap:10px; text-align: center;" @onclick:stopPropagation="true">
-						<h4>Choose Transcode Preset:</h4>
-						<select id="formatSelect" style="flex-grow: 1; " class="custom-form-control" @bind="backup.TranscodePreset">
-							<option value="">-- Select a Format --</option>
-							@foreach (string preset in Manager.Presets)
-							{
-								<option value="@preset">@Path.GetFileNameWithoutExtension(preset)</option>
-							}
-						</select>
+		<div style="font-size:x-large">
+			<button @onclick="@LoadHanbrakePresets">
+				Refresh Handbrake Preset
+			</button>
+
+			<button @onclick="@LoadMKVBackups">
+				Load MKV Backups
+			</button>
+		</div>
+
+		@foreach (MKVBackup backup in Manager.Backups)
+		{
+			<div style="padding: 10px; border-radius: 10px; background-color:lightblue;">
+				<div>
+					<div>
+
+						<div style="display: flex; flex-direction: row; justify-content: flex-start; gap:10px;">
+							<h3>@backup.Name</h3>
+							<h3>(@backup.GetTotalVideos() Videos)</h3>
+						</div>
+
+						<div style="display: flex; flex-direction: row; justify-content: flex-start; align-items:center; gap:10px;">
+							<input type="checkbox"
+								   class="form-check-input"
+								   id="delete-on-complete"
+								   @bind="@backup.RemoveOnCompletion"
+								   style="width: 30px; height:30px; margin:0px" />
+
+							<h4 style="margin:0px;">Delete on Completion</h4>
+						</div>
+
+						<div style="display: flex; flex-direction: row; justify-content: flex-start; gap:10px; text-align: center;" @onclick:stopPropagation="true">
+							<h4>Choose Transcode Preset:</h4>
+							<select id="formatSelect" style="flex-grow: 1; " class="custom-form-control" @bind="backup.TranscodePreset">
+								<option value="">-- Select a Format --</option>
+								@foreach (string preset in Manager.Presets)
+								{
+									<option value="@preset">@Path.GetFileNameWithoutExtension(preset)</option>
+								}
+							</select>
+						</div>
 					</div>
+
+					<button style="width: 100%; padding: 10px; margin-top: 10px;" @onclick="() => Manager.AddToTranscodeQueue(backup)">
+						Transcode
+					</button>
 				</div>
 
-				<button style="width: 100%; padding: 10px; margin-top: 10px" @onclick="() => Manager.AddToTranscodeQueue(backup)">
-					Transcode
-				</button>
+				@foreach (var category in backup.VideoCategories.Values)
+				{
+					<VideoCategory Category="@category" />
+				}
 			</div>
+		}
+	</div>
+}
 
-			@foreach (var category in backup.VideoCategories.Values)
-			{
-				<VideoCategory Category="@category" />
-			}
-		</div>
+@code {
+
+	protected override void OnInitialized()
+	{
+		Manager.OnProgressUpdated += UpdateProgress;
 	}
-</div>
+
+	private void LoadHanbrakePresets()
+	{
+		Manager.LoadHandbrakePresets();
+	}
+
+	private void LoadMKVBackups()
+	{
+		Manager.LoadMKVBackups();
+	}
+
+	private void UpdateProgress()
+	{
+		InvokeAsync(StateHasChanged);
+	}
+
+	public void Dispose()
+	{
+		Console.WriteLine("Dispose MKV");
+		Manager.OnProgressUpdated -= UpdateProgress;
+	}
+}

@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using NanoDNA.ProcessRunner;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 
 namespace Automatic_Bluray_Ripping
@@ -8,17 +9,26 @@ namespace Automatic_Bluray_Ripping
         private readonly ConcurrentQueue<VideoMetadata> _queue = new();
         private readonly SemaphoreSlim _signal = new(0);
 
+        public event Action? OnProgressUpdated;
+
         public void EnqueueJob(VideoMetadata metadata)
         {
             _queue.Enqueue(metadata);
             _signal.Release();
+            UpdateThumbnails();
         }
 
         public async Task<VideoMetadata> DequeueJobAsync(CancellationToken cancellationToken)
         {
             await _signal.WaitAsync(cancellationToken);
             _queue.TryDequeue(out var metadata);
+            UpdateThumbnails();
             return metadata!;
+        }
+
+        public void UpdateThumbnails()
+        {
+            OnProgressUpdated?.Invoke();
         }
     }
 
@@ -38,6 +48,8 @@ namespace Automatic_Bluray_Ripping
                 VideoMetadata metadata = await _queueService.DequeueJobAsync(stoppingToken);
 
                 await ExtractThumbnailToBase64Async(metadata);
+
+                _queueService.UpdateThumbnails();
             }
         }
 
@@ -48,17 +60,17 @@ namespace Automatic_Bluray_Ripping
 
             string timeOffset = "00:01:00";
 
-            if (metadata.Duration < 65)
-                timeOffset = "00:00:02";
+            if (metadata.Duration < 65000)
+                timeOffset = $"{TimeSpan.FromMilliseconds(metadata.Duration/2):hh\\:mm\\:ss}";
 
-            string arguments = $"-ss {timeOffset} -i \"{metadata.FilePath}\" -vframes 1 -f image2 -c:v mjpeg pipe:1";
+            string arguments = $"-ss {timeOffset} -discard nokey -i \"{metadata.FilePath}\" -an -sn -frames:v 1 -f image2 -c:v mjpeg pipe:1";
 
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = @"C:\FFmpeg\App\bin\ffmpeg.exe",
                 Arguments = arguments,
                 RedirectStandardOutput = true,
-                RedirectStandardError = false,
+                RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
@@ -67,6 +79,8 @@ namespace Automatic_Bluray_Ripping
             {
                 process.Start();
 
+                Task<string> error = process.StandardError.ReadToEndAsync();
+
                 using (MemoryStream ms = new MemoryStream())
                 {
                     await process.StandardOutput.BaseStream.CopyToAsync(ms);
@@ -74,9 +88,12 @@ namespace Automatic_Bluray_Ripping
 
                     byte[] imageBytes = ms.ToArray();
 
+                    string errorOutput = await error;
+
                     if (imageBytes.Length == 0 || process.ExitCode != 0)
                     {
                         Console.WriteLine($"Image Extraction failed for {metadata.Name}");
+                        Console.WriteLine(errorOutput);
                         return;
                     }
 

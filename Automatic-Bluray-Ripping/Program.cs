@@ -22,23 +22,23 @@ namespace Automatic_Bluray_Ripping
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
 
-            //builder.Services.AddScoped<TranscodeStateService>();
             builder.Services.AddScoped<DefaultSettings>();
 
             TranscodeQueueService transcodeQueue = new TranscodeQueueService();
-            OpticalDriveManager driveManager = new OpticalDriveManager();
-            MakeMKVManager mkvManager = new MakeMKVManager();
-            TranscodeManager transcodeManager = new TranscodeManager(transcodeQueue);
             ThumbnailQueue thumbnailQueue = new ThumbnailQueue();
             ThumbnailManager thumbnailManager = new ThumbnailManager(thumbnailQueue);
-            MediaScannerManager mediaScannerManager = new MediaScannerManager(thumbnailQueue, transcodeQueue);
 
+            OpticalDriveManager driveManager = new OpticalDriveManager();
+            MakeMKVManager mkvManager = new MakeMKVManager(driveManager);
+            MediaScannerManager mediaScannerManager = new MediaScannerManager(mkvManager, thumbnailQueue, transcodeQueue);
+            TranscodeManager transcodeManager = new TranscodeManager(transcodeQueue);
+            
             _ = Task.Run(async () =>
             {
                 await driveManager.ReadOpticalDrives();
                 await mkvManager.ScanForBackups();
                 mediaScannerManager.LoadHandbrakePresets();
-                mediaScannerManager.ScanBackups();
+                mediaScannerManager.LoadMKVBackups();
 
                 //transcodeManager.LoadHandbrakePresets();
                 //transcodeManager.ScanBackups();
