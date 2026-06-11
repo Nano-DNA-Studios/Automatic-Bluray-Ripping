@@ -203,7 +203,8 @@ namespace Automatic_Bluray_Ripping
                         OutputFilePath = Path.Combine(exportDir, Path.GetFileName(metadata.Name) + ".mkv"),
                         Args = metadata.GetTranscodeArgs(),
                         ThumbnailBase64 = metadata.ThumbnailBase64,
-                        TranscodePreset = backup.TranscodePreset
+                        TranscodePreset = backup.TranscodePreset,
+                        RemoveOnCompletion = backup.RemoveOnCompletion
                     });
                 }
             }

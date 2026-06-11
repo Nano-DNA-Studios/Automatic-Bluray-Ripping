@@ -1,4 +1,6 @@
 using Automatic_Bluray_Ripping.Components;
+using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Extensions.FileProviders;
 
 namespace Automatic_Bluray_Ripping
 {
@@ -55,7 +57,19 @@ namespace Automatic_Bluray_Ripping
 
             var app = builder.Build();
 
+            var provider = new FileExtensionContentTypeProvider();
+            provider.Mappings[".mkv"] = "video/x-matroska";
+
             AppServices.Provider = app.Services;
+
+            string transcodesPath = Path.Combine(AppContext.BaseDirectory, "Transcodes");
+
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(transcodesPath),
+                RequestPath = "/transcodes",
+                ContentTypeProvider = provider
+            });
 
             // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())

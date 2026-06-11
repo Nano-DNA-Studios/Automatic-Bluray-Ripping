@@ -1,7 +1,6 @@
 ﻿using NanoDNA.ProcessRunner;
 using NanoDNA.ProcessRunner.Enums;
 using NanoDNA.ProcessRunner.Results;
-using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
 namespace Automatic_Bluray_Ripping

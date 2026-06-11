@@ -23,6 +23,8 @@
 
         public string ThumbnailBase64 { get; set; }
 
+        public bool RemoveOnCompletion { get; set; }
+
         public TranscodeJob ()
         {
             Name = string.Empty;
@@ -31,6 +33,7 @@
             OutputFilePath = string.Empty;
             Args = string.Empty;
             ThumbnailBase64 = string.Empty;
+            RemoveOnCompletion = true;
         }
 
         public string GetFullArgument ()

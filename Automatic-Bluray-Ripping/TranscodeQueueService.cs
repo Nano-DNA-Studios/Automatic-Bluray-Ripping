@@ -59,5 +59,10 @@ namespace Automatic_Bluray_Ripping
 
             return jobs.ToArray();
         }
+
+        public void ClearCompletedJobs()
+        {
+            _completedQueue.Clear();
+        }
     }
 }
