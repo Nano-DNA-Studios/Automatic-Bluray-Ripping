@@ -2,28 +2,40 @@
 {
     public class DefaultSettings
     {
-        public static string DefaultAudioCodec = "flac16";
+        public string DefaultRipDirectory { get; private set; }
 
-        public static string DefaultTranscodeDirectory = @"D:\NanoDNA Studios\Development\Automatic-Bluray-Ripping\Automatic-Bluray-Ripping\bin\Debug\net8.0\Transcodes";
+        public string DefaultMKVDirectory { get; private set; }
 
-        public static string DefaultRipDirectory = @"D:\NanoDNA Studios\Development\Automatic-Bluray-Ripping\Automatic-Bluray-Ripping\bin\Debug\net8.0\Rips";
+        public string DefaultTranscodeDirectory { get; private set; }
 
-        public static int MinVideoLength = 1;
-
-        public static string DefaultMKVDirectory = @"D:\NanoDNA Studios\Development\Automatic-Bluray-Ripping\Automatic-Bluray-Ripping\bin\Debug\net8.0\MKVs";
+        public string DefaultAudioCodec = "flac16";
+        
+        public int MinVideoLength = 1;
 
         public DefaultSettings ()
         {
-            string? exePath = Environment.ProcessPath;
+            string? exePath = Path.GetDirectoryName(Environment.ProcessPath);
 
             Console.WriteLine(exePath);
 
             if (exePath == null)
-                return;
+                exePath = "./";
 
+            DefaultRipDirectory = Path.Combine(exePath, "Rips");
+            DefaultMKVDirectory = Path.Combine(exePath, "MKVs");
+            DefaultTranscodeDirectory = Path.Combine(exePath, "Transcodes");
+
+            if (!Directory.Exists(DefaultRipDirectory))
+                Directory.CreateDirectory(DefaultRipDirectory);
+
+            if (!Directory.Exists(DefaultMKVDirectory))
+                Directory.CreateDirectory(DefaultMKVDirectory);
+
+            if (!Directory.Exists(DefaultTranscodeDirectory))
+                Directory.CreateDirectory(DefaultTranscodeDirectory);
         }
 
-        public static Dictionary<string, string> AudioCodecs = new Dictionary<string, string>
+        public Dictionary<string, string> AudioCodecs = new Dictionary<string, string>
         {
             // Encoding Options
             { "AAC", "av_aac" },
@@ -49,7 +61,7 @@
             { "Auto Passthru (Global)", "copy" }
         };
 
-        public static Dictionary<int, string> Mixdown = new Dictionary<int, string>
+        public Dictionary<int, string> Mixdown = new Dictionary<int, string>
         {
             [1] = "Mono",
             [2] = "Stereo",
@@ -60,7 +72,7 @@
         };
 
         // Conversion Dictionary: Maps Display Names to HandBrake CLI expected tokens (-6 / --mixdown)
-        public static Dictionary<string, string> MixdownToCli = new Dictionary<string, string>
+        public Dictionary<string, string> MixdownToCli = new Dictionary<string, string>
         {
             { "Mono", "mono" },
             { "Stereo", "stereo" },
@@ -72,7 +84,7 @@
             { "7.1 Surround", "7point1" }
         };
 
-        public static string[] GetAllowableMixdowns(int channels)
+        public string[] GetAllowableMixdowns(int channels)
         {
             List<string> mixdowns = new();
 
@@ -91,7 +103,7 @@
             return mixdowns.ToArray();
         }
 
-        public static string GetMaxMixdown(int channels)
+        public string GetMaxMixdown(int channels)
         {
             foreach (int key in Mixdown.Keys)
             {

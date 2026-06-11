@@ -1,4 +1,5 @@
 ﻿using MediaInfo;
+using MediaInfo.Model;
 
 namespace Automatic_Bluray_Ripping
 {
@@ -48,9 +49,11 @@ namespace Automatic_Bluray_Ripping
 
         private readonly MakeMKVManager _mkvManager;
 
+        private readonly DefaultSettings _settings;
+
         public event Action? OnProgressUpdated;
 
-        public MediaScannerManager(MakeMKVManager mkvManager, ThumbnailQueue thumbnailQueue, TranscodeQueueService transcodeQueueService)
+        public MediaScannerManager(MakeMKVManager mkvManager, ThumbnailQueue thumbnailQueue, TranscodeQueueService transcodeQueueService, DefaultSettings settings)
         {
             Backups = new List<MKVBackup>();
             Presets = [];
@@ -61,6 +64,7 @@ namespace Automatic_Bluray_Ripping
             _transcodeQueueService = transcodeQueueService;
 
             _thumbnailQueue.OnProgressUpdated += Update;
+            _settings = settings;
         }
 
         private void Update()
@@ -95,10 +99,10 @@ namespace Automatic_Bluray_Ripping
 
             Backups = new List<MKVBackup>();
 
-            if (!Directory.Exists(DefaultSettings.DefaultMKVDirectory))
+            if (!Directory.Exists(_settings.DefaultMKVDirectory))
                 return;
 
-            foreach (string dir in Directory.GetDirectories(DefaultSettings.DefaultMKVDirectory))
+            foreach (string dir in Directory.GetDirectories(_settings.DefaultMKVDirectory))
             {
                 MKVBackup backup = new MKVBackup(dir);
 
@@ -159,16 +163,16 @@ namespace Automatic_Bluray_Ripping
             List<SubtitleStreamItem> subtitleStreams = new List<SubtitleStreamItem>();
             List<ChapterStreamItem> chapterStreams = new List<ChapterStreamItem>();
 
-            foreach (var video in mediaFile.VideoStreams)
+            foreach (VideoStream video in mediaFile.VideoStreams)
                 videoStreams.Add(new VideoStreamItem(video, mediaFile.Duration, videoStreams.Count + 1));
 
-            foreach (var audio in mediaFile.AudioStreams)
-                audioStreams.Add(new AudioStreamItem(audio, audioStreams.Count + 1));
+            foreach (AudioStream audio in mediaFile.AudioStreams)
+                audioStreams.Add(new AudioStreamItem(audio, audioStreams.Count + 1, _settings));
 
-            foreach (var subtitle in mediaFile.Subtitles)
+            foreach (SubtitleStream subtitle in mediaFile.Subtitles)
                 subtitleStreams.Add(new SubtitleStreamItem(subtitle, subtitleStreams.Count + 1));
 
-            foreach (var chapter in mediaFile.Chapters)
+            foreach (ChapterStream chapter in mediaFile.Chapters)
                 chapterStreams.Add(new ChapterStreamItem(chapter, chapterStreams.Count + 1));
 
             metadata.VideoStreams = videoStreams.ToArray();
@@ -179,9 +183,35 @@ namespace Automatic_Bluray_Ripping
             _thumbnailQueue.EnqueueJob(metadata);
         }
 
+        private string GetTranscodeArgs(VideoMetadata metadata)
+        {
+            string args = "";
+
+            AudioStreamItem[] selectedAudio = metadata.AudioStreams.Where(s => s.IsSelected).ToArray();
+
+            if (selectedAudio.Length > 0)
+            {
+                args += $" -a " + string.Join(",", selectedAudio.Select(s => s.ID));
+                args += $" -E " + string.Join(",", selectedAudio.Select(s => s.Codec));
+                args += $" -6 " + string.Join(",", selectedAudio.Select(s => _settings.MixdownToCli[s.Mixdown]));
+                args += $" -A " + string.Join(",", selectedAudio.Select(s => $"\"{s.Name}\""));
+            }
+
+            SubtitleStreamItem[] selectedSubtitle = metadata.SubtitleStreams.Where(s => s.IsSelected).ToArray();
+
+            if (selectedSubtitle.Length > 0)
+            {
+                args += $" -s " + string.Join(",", selectedSubtitle.Select(s => s.ID));
+                args += $" -S " + string.Join(",", selectedSubtitle.Select(s => $"\"{s.Name}\""));
+            }
+
+            return args;
+        }
+
+
         public void AddToTranscodeQueue (MKVBackup backup)
         {
-            string exportDir = Path.Combine(DefaultSettings.DefaultTranscodeDirectory, backup.Name);
+            string exportDir = Path.Combine(_settings.DefaultTranscodeDirectory, backup.Name);
 
             if (!Directory.Exists(exportDir))
                 Directory.CreateDirectory(exportDir);
@@ -201,7 +231,7 @@ namespace Automatic_Bluray_Ripping
                         Name = metadata.Name,
                         InputFilePath = metadata.FilePath,
                         OutputFilePath = Path.Combine(exportDir, Path.GetFileName(metadata.Name) + ".mkv"),
-                        Args = metadata.GetTranscodeArgs(),
+                        Args = GetTranscodeArgs(metadata),
                         ThumbnailBase64 = metadata.ThumbnailBase64,
                         TranscodePreset = backup.TranscodePreset,
                         RemoveOnCompletion = backup.RemoveOnCompletion

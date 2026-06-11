@@ -32,16 +32,30 @@ namespace Automatic_Bluray_Ripping
 
     public class OpticalDriveManager
     {
-        public OpticalDrive[] OpticalDrives { get; set; } = [];
+        public OpticalDrive[] OpticalDrives { get; set; }
 
-        public bool HasScanned = false;
-        public bool IsScanning { get; set; } = false;
+        public bool HasScanned { get; set; }
+        public bool IsScanning { get; set; } 
 
-        public bool IsLocked = false;
+        public bool IsLocked { get; set; }
 
-        public CancellationTokenSource TokenSrc = new ();
+        public CancellationTokenSource TokenSrc { get; }
 
         public event Action? OnProgressUpdated;
+
+        private DefaultSettings _settings { get; }
+
+        public OpticalDriveManager (DefaultSettings settings)
+        {
+            _settings = settings;
+
+            OpticalDrives = new OpticalDrive[0];
+            TokenSrc = new CancellationTokenSource ();
+            
+            HasScanned = false;
+            IsScanning = false;
+            IsLocked = false;
+        }
 
         public async Task ReadOpticalDrives()
         {
@@ -122,7 +136,7 @@ namespace Automatic_Bluray_Ripping
 
             ProcessRunner process = new ProcessRunner("makemkvcon");
 
-            string args = $"backup --decrypt --cache=1024 --noscan -r --progress=-same --minlength={DefaultSettings.MinVideoLength} disc:{drive.ID} \"{Path.Combine(DefaultSettings.DefaultRipDirectory, drive.DiscName)}\"";
+            string args = $"backup --decrypt --cache=1024 --noscan -r --progress=-same --minlength={_settings.MinVideoLength} disc:{drive.ID} \"{Path.Combine(_settings.DefaultRipDirectory, drive.DiscName)}\"";
 
             process.STDOutputReceived += (sender, args) =>
             {

@@ -71,31 +71,6 @@ namespace Automatic_Bluray_Ripping
 
             return signature;
         }
-
-        public string GetTranscodeArgs ()
-        {
-            string args = "";
-
-            AudioStreamItem[] selectedAudio = AudioStreams.Where(s => s.IsSelected).ToArray();
-
-            if (selectedAudio.Length > 0)
-            {
-                args += $" -a " + string.Join(",", selectedAudio.Select(s => s.ID));
-                args += $" -E " + string.Join(",", selectedAudio.Select(s => s.Codec));
-                args += $" -6 " + string.Join(",", selectedAudio.Select(s => DefaultSettings.MixdownToCli[s.Mixdown]));
-                args += $" -A " + string.Join(",", selectedAudio.Select(s => $"\"{s.Name}\""));
-            }
-
-            SubtitleStreamItem[] selectedSubtitle = SubtitleStreams.Where(s => s.IsSelected).ToArray();
-
-            if (selectedSubtitle.Length > 0)
-            {
-                args += $" -s " + string.Join(",", selectedSubtitle.Select(s => s.ID));
-                args += $" -S " + string.Join(",", selectedSubtitle.Select(s => $"\"{s.Name}\""));
-            }
-
-            return args;
-        }
     }
 
     public class VideoStreamItem
@@ -164,7 +139,7 @@ namespace Automatic_Bluray_Ripping
             this.AllowableMixdowns = [];
         }
 
-        public AudioStreamItem(AudioStream audio, int id)
+        public AudioStreamItem(AudioStream audio, int id, DefaultSettings settings)
         {
             this.ID = id;
             this.Format = $"{audio.CodecFriendly} - {audio.Name}";
@@ -174,9 +149,10 @@ namespace Automatic_Bluray_Ripping
             this.IsSelected = true;
 
             this.Name = $"{this.Language} - {this.Format}";
-            this.Codec = DefaultSettings.DefaultAudioCodec;
-            this.Mixdown = DefaultSettings.GetMaxMixdown(Channels);
-            this.AllowableMixdowns = DefaultSettings.GetAllowableMixdowns(Channels);
+            
+            this.Codec = settings.DefaultAudioCodec;
+            this.Mixdown = settings.GetMaxMixdown(Channels);
+            this.AllowableMixdowns = settings.GetAllowableMixdowns(Channels);
         }
 
         public string GetSignature() => $"[{ID} | {Format} | {Channels} | {Language}]";

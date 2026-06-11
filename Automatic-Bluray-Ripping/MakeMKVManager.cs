@@ -96,7 +96,9 @@ namespace Automatic_Bluray_Ripping
 
         public event Action? OnProgressUpdated;
 
-        private OpticalDriveManager _opticalDriveManager;
+        private OpticalDriveManager _opticalDriveManager { get; set; }
+
+        private DefaultSettings _settings {  get; set; }
 
         public MakeMKVManager(OpticalDriveManager opticalDriveManager)
         {
@@ -125,7 +127,7 @@ namespace Automatic_Bluray_Ripping
 
             DiscBackups = DiscBackups.Where((d) => d.IsConverting).ToList();
 
-            string[] dirs = Directory.EnumerateDirectories(DefaultSettings.DefaultRipDirectory).ToArray();
+            string[] dirs = Directory.EnumerateDirectories(_settings.DefaultRipDirectory).ToArray();
 
             foreach (string dir in dirs)
             {
@@ -203,9 +205,9 @@ namespace Automatic_Bluray_Ripping
             List<MKVFile> files = new List<MKVFile>();
             List<string> matches = new List<string>();
 
-            ProcessRunner process = new ProcessRunner("makemkvcon", workingDirectory: DefaultSettings.DefaultRipDirectory);
+            ProcessRunner process = new ProcessRunner("makemkvcon", workingDirectory: _settings.DefaultRipDirectory);
 
-            string args = $"-r info file:{backup.Name}/ --minlength={DefaultSettings.MinVideoLength} --noscan";
+            string args = $"-r info file:{backup.Name}/ --minlength={_settings.MinVideoLength} --noscan";
 
             process.STDOutputReceived += (sender, args) =>
             {
@@ -299,10 +301,10 @@ namespace Automatic_Bluray_Ripping
 
         private async Task MakeMKV(MKVFile file, OpticalDiscBackup backup, double offset, double weight)
         {
-            ProcessRunner process = new ProcessRunner("makemkvcon", workingDirectory: DefaultSettings.DefaultRipDirectory);
+            ProcessRunner process = new ProcessRunner("makemkvcon", workingDirectory: _settings.DefaultRipDirectory);
 
-            string output = Path.Combine(DefaultSettings.DefaultMKVDirectory, backup.Name);
-            string args = $"mkv file:{backup.Name} {file.ID} \"{output}\" --cache=1024 --noscan --minlength={DefaultSettings.MinVideoLength} -r --progress=-same";
+            string output = Path.Combine(_settings.DefaultMKVDirectory, backup.Name);
+            string args = $"mkv file:{backup.Name} {file.ID} \"{output}\" --cache=1024 --noscan --minlength={_settings.MinVideoLength} -r --progress=-same";
 
             bool isUnlocked = false;
 
