@@ -16,8 +16,6 @@
         {
             string? exePath = Path.GetDirectoryName(Environment.ProcessPath);
 
-            Console.WriteLine(exePath);
-
             if (exePath == null)
                 exePath = "./";
 

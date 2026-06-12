@@ -10,8 +10,6 @@ namespace Automatic_Bluray_Ripping
 
         public string[] Presets { get; set; }
 
-        public event Action? OnProgressUpdated;
-
         private readonly TranscodeQueueService _queueService;
 
         public TranscodeManager(TranscodeQueueService queueService)

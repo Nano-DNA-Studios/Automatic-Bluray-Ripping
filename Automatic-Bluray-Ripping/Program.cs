@@ -38,10 +38,18 @@ namespace Automatic_Bluray_Ripping
             
             _ = Task.Run(async () =>
             {
-                await driveManager.ReadOpticalDrives();
-                await mkvManager.ScanForBackups();
-                mediaScannerManager.LoadHandbrakePresets();
-                mediaScannerManager.LoadMKVBackups();
+                try
+                {
+                    await driveManager.ReadOpticalDrives();
+                    await mkvManager.ScanForBackups();
+                    mediaScannerManager.LoadHandbrakePresets();
+                    mediaScannerManager.LoadMKVBackups();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Something went wrong lmao {ex.Message}");
+                }
+                
 
                 //transcodeManager.LoadHandbrakePresets();
                 //transcodeManager.ScanBackups();
