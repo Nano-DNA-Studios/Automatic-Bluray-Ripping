@@ -100,7 +100,7 @@ namespace Automatic_Bluray_Ripping
 
         private DefaultSettings _settings {  get; set; }
 
-        public MakeMKVManager(OpticalDriveManager opticalDriveManager)
+        public MakeMKVManager(OpticalDriveManager opticalDriveManager, DefaultSettings settings)
         {
             DiscBackups = new List<OpticalDiscBackup>();
             TokenSrc = new CancellationTokenSource();
@@ -114,6 +114,7 @@ namespace Automatic_Bluray_Ripping
             IsScanning = true;
 
             _opticalDriveManager = opticalDriveManager;
+            _settings = settings;
         }
 
         private bool InProgress(OpticalDiscBackup backup)
