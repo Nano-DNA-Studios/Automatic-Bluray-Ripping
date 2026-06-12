@@ -1,33 +1,158 @@
 ﻿@page "/"
 @rendermode InteractiveServer
-@using MediaInfo;
-@using MediaInfo.Model;
+@inject OpticalDriveManager DriveManager
+@inject MakeMKVManager MKVManager
+@inject MediaScannerManager ScannerManager
+@inject TranscodeQueueService TranscodeQueue
 @inject NavigationManager Nav
 
-<PageTitle>Transcode Configuration</PageTitle>
+<PageTitle>Home Dashboard</PageTitle>
 
-<div style="
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr ;
-    gap: 15px;
-width:fit-content;
-">
-	<div style="text-align: center; padding:10px; background-color: gray; border-radius: 10px;">
-		<img style="width:200px; height:200px;" src="hdd.svg" />
-		<h2>Backup Bluray</h2>
+<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; width: 100%; max-width: 1200px; margin: 0 auto; padding: 20px;">
+
+	@* CARD 1: BLURAY RIPPER *@
+	<div @onclick='() => Nav.NavigateTo("/bluray")' style="cursor: pointer; text-align: center; padding: 20px; background-color: #2d2d2d; color: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+		<img style="width: 120px; height: 120px; margin-bottom: 15px;" src="hdd.svg" alt="Backup Bluray" />
+		<h2 style="margin-bottom: 15px;">1. Backup Bluray</h2>
+
+		<div style="background-color: #3d3d3d; padding: 15px; border-radius: 8px; text-align: left; font-size: 0.95rem;">
+			@if (DriveManager.IsScanning)
+			{
+				<div style="text-align: center; color: #aaa;">Scanning hardware...</div>
+			}
+			else if (DriveManager.OpticalDrives.Length == 0)
+			{
+				<div style="text-align: center; color: #aaa;">No drives detected</div>
+			}
+			else
+			{
+				@foreach (var drive in DriveManager.OpticalDrives)
+				{
+					<div style="margin-bottom: 10px; border-bottom: 1px solid #4d4d4d; padding-bottom: 8px;">
+						<div style="display: flex; justify-content: space-between; font-weight: bold;">
+							<span style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">@(string.IsNullOrEmpty(drive.DiscName) ? "Unknown Disc" : drive.DiscName)</span>
+							<span style="color: #4caf50;">@(drive.IsBusy ? "Ripping..." : "Idle")</span>
+						</div>
+						@if (drive.IsBusy)
+						{
+							<div style="margin-top: 5px; font-size: 0.85rem; color: #ccc;"> progress: @(Math.Round(drive.GlobalProgress * 100))%</div>
+							<progress style="width: 100%; height: 8px;" value="@drive.GlobalProgress" max="1" />
+						}
+					</div>
+				}
+			}
+		</div>
 	</div>
 
-	<div style="text-align: center; padding:10px; background-color: gray; border-radius: 10px;">
-		<img style="width:200px; height:200px;" src="file-video.svg" />
-		<h2>Make MKV</h2>
+	@* CARD 2: MAKE MKV *@
+	<div @onclick='() => Nav.NavigateTo("/makemkv")' style="cursor: pointer; text-align: center; padding: 20px; background-color: #2d2d2d; color: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+		<img style="width: 120px; height: 120px; margin-bottom: 15px;" src="file-video.svg" alt="Make MKV" />
+		<h2 style="margin-bottom: 15px;">2. Make MKV</h2>
+
+		<div style="background-color: #3d3d3d; padding: 15px; border-radius: 8px; text-align: left; font-size: 0.95rem;">
+			@if (MKVManager.IsScanning)
+			{
+				<div style="text-align: center; color: #aaa;">Scanning folder backups...</div>
+			}
+			else if (MKVManager.DiscBackups.Count == 0)
+			{
+				<div style="text-align: center; color: #aaa;">0 folder backups ready</div>
+			}
+			else
+			{
+				<div style="font-weight: bold; margin-bottom: 10px; color: #ff9800;">
+					Backups waiting: @MKVManager.DiscBackups.Count
+				</div>
+
+				@foreach (var backup in MKVManager.DiscBackups)
+				{
+					<div style="margin-bottom: 8px; font-size: 0.85rem;">
+						<div style="display: flex; justify-content: space-between;">
+							<span style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">@backup.Name</span>
+							<span>@backup.Files.Length files</span>
+						</div>
+						@if (backup.IsConverting)
+						{
+							<progress style="width: 100%; height: 6px;" value="@backup.GlobalProgress" max="1" />
+						}
+					</div>
+				}
+			}
+		</div>
 	</div>
 
-	<div style="text-align: center; padding:10px; background-color: gray; border-radius: 10px;">
-		<img style="width:200px; height:200px;" src="convert.svg" />
-		<h2>Configure Transcode</h2>
+	@* CARD 3: TRANSCODE CONFIG & QUEUE *@
+	<div @onclick='() => Nav.NavigateTo("/configuretranscode")' style="cursor: pointer; text-align: center; padding: 20px; background-color: #2d2d2d; color: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+		<img style="width: 120px; height: 120px; margin-bottom: 15px;" src="convert.svg" alt="Configure Transcode" />
+		<h2 style="margin-bottom: 15px;">3. Transcode</h2>
+
+		<div style="background-color: #3d3d3d; padding: 15px; border-radius: 8px; text-align: left; font-size: 0.95rem;">
+			<div style="display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #4d4d4d; padding-bottom: 5px;">
+				<span>Unconfigured MKVs:</span>
+				<span style="font-weight: bold; color: #2196f3;">@ScannerManager.Backups.Count</span>
+			</div>
+
+			<div style="font-weight: bold; margin-top: 10px; margin-bottom: 5px;">
+				Active Transcode Queue:
+			</div>
+
+			@{
+				var jobs = TranscodeQueue.GetJobs();
+				var activeJob = jobs.FirstOrDefault();
+			}
+
+			@if (jobs.Length == 0)
+			{
+				<div style="text-align: center; color: #aaa; font-size: 0.85rem; margin-top: 10px;">Queue is empty</div>
+			}
+			else
+			{
+				<div style="font-size: 0.85rem; color: #aaa; margin-bottom: 8px;">
+					Total jobs in runner: @jobs.Length
+				</div>
+				@if (activeJob != null)
+				{
+					<div style="font-size: 0.85rem; background: #2d2d2d; padding: 8px; border-radius: 4px;">
+						<div style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: bold; color: #4caf50;">
+							Encoding: @activeJob.Name
+						</div>
+						<div style="margin-top: 4px;">Progress: @(Math.Round(TranscodeQueue.CurrentProgressPercent))%</div>
+						<progress style="width: 100%; height: 6px;" value="@TranscodeQueue.CurrentProgressPercent" max="100" />
+					</div>
+				}
+			}
+		</div>
 	</div>
+
 </div>
 
 @code {
+	protected override void OnInitialized()
+	{
+		// Hook up state synchronization across managers to auto-refresh the dashboard UI
+		DriveManager.OnProgressUpdated += RefreshDashboard;
+		MKVManager.OnProgressUpdated += RefreshDashboard;
+		ScannerManager.OnProgressUpdated += RefreshDashboard;
+		TranscodeQueue.OnProgressUpdated += RefreshProgress;
+		TranscodeQueue.OnQueueChanged += RefreshDashboard;
+	}
 
+	private void RefreshProgress(double progress)
+	{
+		InvokeAsync(StateHasChanged);
+	}
+
+	private void RefreshDashboard()
+	{
+		InvokeAsync(StateHasChanged);
+	}
+
+	public void Dispose()
+	{
+		DriveManager.OnProgressUpdated -= RefreshDashboard;
+		MKVManager.OnProgressUpdated -= RefreshDashboard;
+		ScannerManager.OnProgressUpdated -= RefreshDashboard;
+		TranscodeQueue.OnProgressUpdated -= RefreshProgress;
+		TranscodeQueue.OnQueueChanged -= RefreshDashboard;
+	}
 }

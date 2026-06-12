@@ -32,16 +32,24 @@ namespace Automatic_Bluray_Ripping
             ThumbnailManager thumbnailManager = new ThumbnailManager(thumbnailQueue);
 
             OpticalDriveManager driveManager = new OpticalDriveManager(settings);
-            MakeMKVManager mkvManager = new MakeMKVManager(driveManager);
+            MakeMKVManager mkvManager = new MakeMKVManager(driveManager, settings);
             MediaScannerManager mediaScannerManager = new MediaScannerManager(mkvManager, thumbnailQueue, transcodeQueue, settings);
             TranscodeManager transcodeManager = new TranscodeManager(transcodeQueue);
             
             _ = Task.Run(async () =>
             {
-                await driveManager.ReadOpticalDrives();
-                await mkvManager.ScanForBackups();
-                mediaScannerManager.LoadHandbrakePresets();
-                mediaScannerManager.LoadMKVBackups();
+                try
+                {
+                    await driveManager.ReadOpticalDrives();
+                    await mkvManager.ScanForBackups();
+                    mediaScannerManager.LoadHandbrakePresets();
+                    mediaScannerManager.LoadMKVBackups();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Something went wrong lmao {ex.Message}");
+                }
+                
 
                 //transcodeManager.LoadHandbrakePresets();
                 //transcodeManager.ScanBackups();

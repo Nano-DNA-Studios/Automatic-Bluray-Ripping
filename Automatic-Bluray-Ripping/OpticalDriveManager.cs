@@ -64,9 +64,11 @@ namespace Automatic_Bluray_Ripping
             HasScanned = false;
             IsScanning = true;
 
+            Console.WriteLine("Scanning Optical drives");
+
             ProcessRunner process = new ProcessRunner("makemkvcon");
             string args = "-r --cache=1 info disc:9999";
-
+            
             process.STDOutputReceived += (sender, args) =>
             {
                 if (string.IsNullOrEmpty(args.Data))
@@ -89,8 +91,18 @@ namespace Automatic_Bluray_Ripping
                 drives.Add(new OpticalDrive(driveID, driveName, blurayName));
             };
 
+            process.STDErrorReceived += (sender, args) =>
+            {
+                if (string.IsNullOrEmpty(args.Data))
+                    return;
+
+                Console.WriteLine(args.Data);
+            };
+
             //Convert to Async with Cancellation token
             ProcessResult result = (await process.RunAsync(args)).Content;
+
+            Console.WriteLine("Finished Scanning Optical Drives");
 
             if (result.Status == ProcessStatus.Success)
                 this.OpticalDrives = drives.ToArray();
