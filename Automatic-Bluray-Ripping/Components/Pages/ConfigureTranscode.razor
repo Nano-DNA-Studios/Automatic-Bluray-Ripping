@@ -30,45 +30,47 @@ else
 		@foreach (MKVBackup backup in Manager.Backups)
 		{
 			<div style="padding: 10px; border-radius: 10px; background-color:lightblue;">
-				<div>
-					<div>
+				<details>
+					<summary>
+						<div>
 
-						<div style="display: flex; flex-direction: row; justify-content: flex-start; gap:10px;">
-							<h3>@backup.Name</h3>
-							<h3>(@backup.GetTotalVideos() Videos)</h3>
+							<div style="display: flex; flex-direction: row; justify-content: flex-start; gap:10px;">
+								<h3>@backup.Name</h3>
+								<h3>(@backup.GetTotalVideos() Videos)</h3>
+							</div>
+
+							<div style="display: flex; flex-direction: row; justify-content: flex-start; align-items:center; gap:10px;">
+								<input type="checkbox"
+									   class="form-check-input"
+									   id="delete-on-complete"
+									   @bind="@backup.RemoveOnCompletion"
+									   style="width: 30px; height:30px; margin:0px" />
+
+								<h4 style="margin:0px;">Delete on Completion</h4>
+							</div>
+
+							<div style="display: flex; flex-direction: row; justify-content: flex-start; gap:10px; align-items:center;" @onclick:stopPropagation="true">
+								<h4 style="margin:0px">Choose Transcode Preset:</h4>
+								<select id="formatSelect" style="flex-grow: 1; margin:0px" class="custom-form-control" @bind="backup.TranscodePreset">
+									<option value="">-- Select a Format --</option>
+									@foreach (string preset in Manager.Presets)
+									{
+										<option value="@preset">@Path.GetFileNameWithoutExtension(preset)</option>
+									}
+								</select>
+							</div>
 						</div>
 
-						<div style="display: flex; flex-direction: row; justify-content: flex-start; align-items:center; gap:10px;">
-							<input type="checkbox"
-								   class="form-check-input"
-								   id="delete-on-complete"
-								   @bind="@backup.RemoveOnCompletion"
-								   style="width: 30px; height:30px; margin:0px" />
+						<button style="width: 100%; padding: 10px; margin-top: 10px;" @onclick="() => Manager.AddToTranscodeQueue(backup)">
+							Transcode
+						</button>
+					</summary>
 
-							<h4 style="margin:0px;">Delete on Completion</h4>
-						</div>
-
-						<div style="display: flex; flex-direction: row; justify-content: flex-start; gap:10px; text-align: center;" @onclick:stopPropagation="true">
-							<h4>Choose Transcode Preset:</h4>
-							<select id="formatSelect" style="flex-grow: 1; " class="custom-form-control" @bind="backup.TranscodePreset">
-								<option value="">-- Select a Format --</option>
-								@foreach (string preset in Manager.Presets)
-								{
-									<option value="@preset">@Path.GetFileNameWithoutExtension(preset)</option>
-								}
-							</select>
-						</div>
-					</div>
-
-					<button style="width: 100%; padding: 10px; margin-top: 10px;" @onclick="() => Manager.AddToTranscodeQueue(backup)">
-						Transcode
-					</button>
-				</div>
-
-				@foreach (var category in backup.VideoCategories.Values)
-				{
-					<VideoCategory Category="@category" />
-				}
+					@foreach (var category in backup.VideoCategories.Values)
+					{
+						<VideoCategory Category="@category" />
+					}
+				</details>
 			</div>
 		}
 	</div>
