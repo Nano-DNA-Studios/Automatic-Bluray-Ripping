@@ -45,6 +45,8 @@ namespace Automatic_Bluray_Ripping
 
         private readonly ThumbnailQueue _thumbnailQueue;
 
+        private readonly SubtitleQueue _subtitleQueue;
+
         private readonly TranscodeQueueService _transcodeQueueService;
 
         private readonly MakeMKVManager _mkvManager;
@@ -53,7 +55,7 @@ namespace Automatic_Bluray_Ripping
 
         public event Action? OnProgressUpdated;
 
-        public MediaScannerManager(MakeMKVManager mkvManager, ThumbnailQueue thumbnailQueue, TranscodeQueueService transcodeQueueService, DefaultSettings settings)
+        public MediaScannerManager(MakeMKVManager mkvManager, ThumbnailQueue thumbnailQueue, SubtitleQueue subtitleQueue, TranscodeQueueService transcodeQueueService, DefaultSettings settings)
         {
             Backups = new List<MKVBackup>();
             Presets = [];
@@ -61,9 +63,11 @@ namespace Automatic_Bluray_Ripping
 
             _mkvManager = mkvManager;
             _thumbnailQueue = thumbnailQueue;
+            _subtitleQueue = subtitleQueue;
             _transcodeQueueService = transcodeQueueService;
 
             _thumbnailQueue.OnProgressUpdated += Update;
+            _subtitleQueue.OnChange += Update;
             _settings = settings;
         }
 
@@ -181,6 +185,7 @@ namespace Automatic_Bluray_Ripping
             metadata.ChapterStreams = chapterStreams.ToArray();
 
             _thumbnailQueue.EnqueueJob(metadata);
+            _subtitleQueue.EnqueueJob(metadata);
         }
 
         private string GetTranscodeArgs(VideoMetadata metadata)
@@ -207,7 +212,6 @@ namespace Automatic_Bluray_Ripping
 
             return args;
         }
-
 
         public void AddToTranscodeQueue (MKVBackup backup)
         {

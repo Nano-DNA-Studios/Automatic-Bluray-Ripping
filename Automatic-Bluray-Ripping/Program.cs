@@ -27,13 +27,16 @@ namespace Automatic_Bluray_Ripping
             builder.Services.AddScoped<DefaultSettings>();
 
             DefaultSettings settings = new DefaultSettings();
+            
             TranscodeQueueService transcodeQueue = new TranscodeQueueService();
             ThumbnailQueue thumbnailQueue = new ThumbnailQueue();
             ThumbnailManager thumbnailManager = new ThumbnailManager(thumbnailQueue);
+            SubtitleQueue subtitleQueue = new SubtitleQueue();
+            SubtitleManager subtitleManager = new SubtitleManager(subtitleQueue);
 
             OpticalDriveManager driveManager = new OpticalDriveManager(settings);
             MakeMKVManager mkvManager = new MakeMKVManager(driveManager, settings);
-            MediaScannerManager mediaScannerManager = new MediaScannerManager(mkvManager, thumbnailQueue, transcodeQueue, settings);
+            MediaScannerManager mediaScannerManager = new MediaScannerManager(mkvManager, thumbnailQueue, subtitleQueue, transcodeQueue, settings);
             TranscodeManager transcodeManager = new TranscodeManager(transcodeQueue);
             
             _ = Task.Run(async () =>
@@ -50,7 +53,6 @@ namespace Automatic_Bluray_Ripping
                     Console.WriteLine($"Something went wrong lmao {ex.Message}");
                 }
                 
-
                 //transcodeManager.LoadHandbrakePresets();
                 //transcodeManager.ScanBackups();
             });
@@ -62,8 +64,11 @@ namespace Automatic_Bluray_Ripping
             builder.Services.AddSingleton<TranscodeManager>(transcodeManager);
             builder.Services.AddSingleton<ThumbnailQueue>(thumbnailQueue);
             builder.Services.AddSingleton<MediaScannerManager>(mediaScannerManager);
+            builder.Services.AddSingleton<SubtitleQueue>(subtitleQueue);
             builder.Services.AddHostedService<TranscodeManager>(provider => transcodeManager);
             builder.Services.AddHostedService<ThumbnailManager>(provider => thumbnailManager);
+            builder.Services.AddHostedService<SubtitleManager>(provider => subtitleManager);
+
 
             var app = builder.Build();
 
