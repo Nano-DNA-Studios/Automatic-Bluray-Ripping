@@ -22,9 +22,13 @@ namespace Automatic_Bluray_Ripping
 
         public SubtitleStreamItem? ActiveStream { get; private set; }
 
+        public SubtitleJob? ProcessingJob { get; private set; }
+
         public bool IsVisible { get; private set; }
 
         public void NotifyStateChanged() => OnChange?.Invoke();
+
+        public int GetQueueCount () => _queue.Count;
 
         public void ShowPreview(VideoMetadata metadata, SubtitleStreamItem stream)
         {
@@ -73,8 +77,14 @@ namespace Automatic_Bluray_Ripping
         {
             await _signal.WaitAsync(cancellationToken);
             _queue.TryDequeue(out var metadata, out _);
+            ProcessingJob = metadata;
             NotifyStateChanged();
             return metadata!;
+        }
+
+        public void ClearProcessing()
+        {
+            ProcessingJob = null;
         }
     }
 
@@ -97,6 +107,8 @@ namespace Automatic_Bluray_Ripping
                 SubtitleJob metadata = await _queueService.DequeueJobAsync(stoppingToken);
 
                 await ExtractSubtitleImagesToBase64Async(metadata);
+
+                _queueService.ClearProcessing();
 
                 _queueService.NotifyStateChanged();
             }

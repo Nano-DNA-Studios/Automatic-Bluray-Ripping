@@ -37,6 +37,8 @@ namespace Automatic_Bluray_Ripping
 
     public class MediaScannerManager
     {
+        public List<MKVBackup> UnremovedBackups { get; set; }
+
         public List<MKVBackup> Backups { get; set; }
 
         public string[] Presets { get; set; }
@@ -58,6 +60,7 @@ namespace Automatic_Bluray_Ripping
         public MediaScannerManager(MakeMKVManager mkvManager, ThumbnailQueue thumbnailQueue, SubtitleQueue subtitleQueue, TranscodeQueueService transcodeQueueService, DefaultSettings settings)
         {
             Backups = new List<MKVBackup>();
+            UnremovedBackups = new List<MKVBackup>();
             Presets = [];
             IsScanning = true;
 
@@ -106,11 +109,20 @@ namespace Automatic_Bluray_Ripping
             if (!Directory.Exists(_settings.DefaultMKVDirectory))
                 return;
 
+            if (UnremovedBackups.Count > 0)
+            {
+                Backups.AddRange(UnremovedBackups);
+                UnremovedBackups.Clear();
+            }
+               
             foreach (string dir in Directory.GetDirectories(_settings.DefaultMKVDirectory))
             {
                 MKVBackup backup = new MKVBackup(dir);
 
                 if (_mkvManager.DiscBackups.Any((d) => d.Name == backup.Name))
+                    continue;
+
+                if (Backups.Any((b) => b.Name == backup.Name))
                     continue;
 
                 ComputeCategories(backup);
@@ -242,6 +254,9 @@ namespace Automatic_Bluray_Ripping
                     });
                 }
             }
+
+            if (!backup.RemoveOnCompletion)
+                UnremovedBackups.Add(backup);
 
             Backups.Remove(backup);
         }

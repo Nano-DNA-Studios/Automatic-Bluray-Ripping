@@ -5,15 +5,19 @@
 @inject MediaScannerManager ScannerManager
 @inject TranscodeQueueService TranscodeQueue
 @inject NavigationManager Nav
+@inject SubtitleQueue SubQueue
+@inject ThumbnailQueue ThumbQueue
+@implements IDisposable
 
 <PageTitle>Home Dashboard</PageTitle>
 
+@* TOP ROW: MAIN RIPPING & PREPARATION PIPELINE *@
 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; width: 100%; max-width: 1200px; margin: 0 auto; padding: 20px;">
 
 	@* CARD 1: BLURAY RIPPER *@
 	<div @onclick='() => Nav.NavigateTo("/bluray")' style="cursor: pointer; text-align: center; padding: 20px; background-color: #2d2d2d; color: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
 		<img style="width: 120px; height: 120px; margin-bottom: 15px;" src="hdd.svg" alt="Backup Bluray" />
-		<h2 style="margin-bottom: 15px;">1. Backup Bluray</h2>
+		<h2 style="margin-bottom: 15px;">1. Rip Bluray</h2>
 
 		<div style="background-color: #3d3d3d; padding: 15px; border-radius: 8px; text-align: left; font-size: 0.95rem;">
 			@if (DriveManager.IsScanning)
@@ -81,60 +85,164 @@
 		</div>
 	</div>
 
-	@* CARD 3: TRANSCODE CONFIG & QUEUE *@
+	@* CARD 3: TRANSCODE INTAKE SETUP *@
 	<div @onclick='() => Nav.NavigateTo("/configuretranscode")' style="cursor: pointer; text-align: center; padding: 20px; background-color: #2d2d2d; color: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
 		<img style="width: 120px; height: 120px; margin-bottom: 15px;" src="convert.svg" alt="Configure Transcode" />
-		<h2 style="margin-bottom: 15px;">3. Transcode</h2>
+		<h2 style="margin-bottom: 15px;">3. Configuration</h2>
 
 		<div style="background-color: #3d3d3d; padding: 15px; border-radius: 8px; text-align: left; font-size: 0.95rem;">
-			<div style="display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #4d4d4d; padding-bottom: 5px;">
+			<div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
 				<span>Unconfigured MKVs:</span>
 				<span style="font-weight: bold; color: #2196f3;">@ScannerManager.Backups.Count</span>
 			</div>
-
-			<div style="font-weight: bold; margin-top: 10px; margin-bottom: 5px;">
-				Active Transcode Queue:
+			<div style="text-align: center; color: #aaa; font-size: 0.85rem; margin-top: 15px; border-top: 1px solid #4d4d4d; padding-top: 10px;">
+				Click to configure encoder settings
 			</div>
-
-			@{
-				var jobs = TranscodeQueue.GetJobs();
-				var activeJob = TranscodeQueue.CurrentJob;
-			}
-
-			@if (jobs.Length == 0)
-			{
-				<div style="text-align: center; color: #aaa; font-size: 0.85rem; margin-top: 10px;">Queue is empty</div>
-			}
-			else
-			{
-				<div style="font-size: 0.85rem; color: #aaa; margin-bottom: 8px;">
-					Total jobs in runner: @jobs.Length
-				</div>
-				@if (activeJob != null)
-				{
-					<div style="font-size: 0.85rem; background: #2d2d2d; padding: 8px; border-radius: 4px;">
-						<div style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: bold; color: #4caf50;">
-							Encoding: @activeJob.Name
-						</div>
-						<div style="margin-top: 4px;">Progress: @(Math.Round(TranscodeQueue.CurrentProgressPercent))%</div>
-						<progress style="width: 100%; height: 6px;" value="@TranscodeQueue.CurrentProgressPercent" max="100" />
-					</div>
-				}
-			}
 		</div>
 	</div>
+</div>
 
+<hr style="border: 0; border-top: 1px solid #4d4d4d; max-width: 1200px; margin: 10px auto;" />
+
+@* BOTTOM ROW: DEDICATED BACKGROUND WORKERS SECTION *@
+<div style="max-width: 1200px; margin: 0 auto; padding: 0 20px 20px 20px;">
+	<h3 style="color: white; margin-bottom: 15px; font-weight: normal; font-size: 1.2rem; padding-left: 5px;">Background Workers</h3>
+
+	<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; width: 100%;">
+
+		@* WORKER CARD 1: TRANSCODE WORKER *@
+		<div style="padding: 20px; background-color: #2d2d2d; color: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: space-between;">
+			<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+				<h4 style="margin: 0; font-size: 1.1rem; font-weight: 600;">Transcode Runner</h4>
+				<span style="font-weight: bold; background-color: #3d3d3d; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; color: #2196f3; border: 1px solid rgba(33, 150, 243, 0.2);">
+					@TranscodeQueue.GetQueueCount() left
+				</span>
+			</div>
+
+			<div style="background-color: #3d3d3d; padding: 15px; border-radius: 8px; font-size: 0.9rem; min-height: 85px; display: flex; flex-direction: column; justify-content: center;">
+				@if (TranscodeQueue.CurrentJob != null)
+				{
+					<div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.8rem; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px;">
+						<span>Transcoding</span>
+						<span style="color: #2196f3; font-weight: bold;">@(Math.Round(TranscodeQueue.CurrentProgressPercent))%</span>
+					</div>
+
+					<div style="max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; color: #e0e0e0; margin-bottom: 8px;" title="@TranscodeQueue.CurrentJob.Name">
+						@TranscodeQueue.CurrentJob.Name
+					</div>
+
+					<div style="width: 100%; height: 3px; background-color: #2d2d2d; border-radius: 2px; overflow: hidden;">
+						<div style="width: @(TranscodeQueue.CurrentProgressPercent)%; height: 100%; background-color: #2196f3; border-radius: 2px; transition: width 0.4s ease;"></div>
+					</div>
+				}
+				else
+				{
+					<div style="text-align: center; color: #888; font-size: 0.85rem;">Idle / Queue Empty</div>
+				}
+			</div>
+		</div>
+
+		@* WORKER CARD 2: SUBTITLE WORKER *@
+		<div style="padding: 20px; background-color: #2d2d2d; color: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: space-between;">
+			<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+				<h4 style="margin: 0; font-size: 1.1rem; font-weight: 600;">Subtitle Extractor</h4>
+				<span style="font-weight: bold; background-color: #3d3d3d; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; color: #e91e63; border: 1px solid rgba(233, 30, 99, 0.2);">
+					@SubQueue.GetQueueCount() left
+				</span>
+			</div>
+
+			<div style="background-color: #3d3d3d; padding: 15px; border-radius: 8px; font-size: 0.9rem; min-height: 85px; display: flex; flex-direction: column; justify-content: center;">
+				@if (SubQueue.ProcessingJob != null)
+				{
+					<div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.8rem; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px;">
+						<span>Processing</span>
+						<span style="color: #e91e63; font-weight: bold;">Track ID @(SubQueue.ProcessingJob.Value.Index + 1)</span>
+					</div>
+
+					<div style="max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; color: #e0e0e0; margin-bottom: 8px;" title="@SubQueue.ProcessingJob.Value.Metadata.Name">
+						@SubQueue.ProcessingJob.Value.Metadata.Name
+					</div>
+
+					@* Clean, infinite horizontal tracker line *@
+					<div style="width: 100%; height: 3px; background-color: #2d2d2d; border-radius: 2px; overflow: hidden; position: relative;">
+						<div style="width: 30%; height: 100%; background-color: #e91e63; border-radius: 2px; position: absolute; animation: subtitle-loading 1.5s infinite ease-in-out;"></div>
+					</div>
+				}
+				else
+				{
+					<div style="text-align: center; color: #888; font-size: 0.85rem;">Idle / Queue Empty</div>
+				}
+			</div>
+		</div>
+
+		@* WORKER CARD 3: THUMBNAIL WORKER *@
+		<div style="padding: 20px; background-color: #2d2d2d; color: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: space-between;">
+			<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+				<h4 style="margin: 0; font-size: 1.1rem; font-weight: 600;">Thumbnail Renderer</h4>
+				<span style="font-weight: bold; background-color: #3d3d3d; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; color: #00bcd4; border: 1px solid rgba(0, 188, 212, 0.2);">
+					@ThumbQueue.GetQueueCount() left
+				</span>
+			</div>
+
+			<div style="background-color: #3d3d3d; padding: 15px; border-radius: 8px; font-size: 0.9rem; min-height: 85px; display: flex; flex-direction: column; justify-content: center;">
+				@if (ThumbQueue.GetQueueCount() > 0)
+				{
+					<div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.8rem; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px;">
+						<span>Extracting</span>
+						<span style="color: #00bcd4; font-weight: bold;">Thumbnail</span>
+					</div>
+
+					<div style="max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; color: #e0e0e0; margin-bottom: 8px;">
+						Name of the Video (TODO)
+					</div>
+
+					<div style="width: 100%; height: 3px; background-color: #2d2d2d; border-radius: 2px; overflow: hidden; position: relative;">
+						<div style="width: 40%; height: 100%; background-color: #00bcd4; border-radius: 2px; position: absolute; animation: thumbnail-loading 1.2s infinite linear;"></div>
+					</div>
+				}
+				else
+				{
+					<div style="text-align: center; color: #888; font-size: 0.85rem;">Idle / Queue Empty</div>
+				}
+			</div>
+		</div>
+
+		<style>
+			@@keyframes subtitle-loading {
+				0% {
+					left: -30%;
+				}
+
+				100% {
+					left: 100%;
+				}
+			}
+
+			@@keyframes thumbnail-loading {
+				0% {
+					left: -30%;
+				}
+
+				100% {
+					left: 100%;
+				}
+			}
+		</style>
+
+	</div>
 </div>
 
 @code {
 	protected override void OnInitialized()
 	{
-		// Hook up state synchronization across managers to auto-refresh the dashboard UI
 		DriveManager.OnProgressUpdated += RefreshDashboard;
 		MKVManager.OnProgressUpdated += RefreshDashboard;
 		ScannerManager.OnProgressUpdated += RefreshDashboard;
 		TranscodeQueue.OnProgressUpdated += RefreshProgress;
 		TranscodeQueue.OnQueueChanged += RefreshDashboard;
+
+		SubQueue.OnChange += RefreshDashboard;
+		ThumbQueue.OnProgressUpdated += RefreshDashboard;
 	}
 
 	private void RefreshProgress(double progress)
@@ -154,5 +262,8 @@
 		ScannerManager.OnProgressUpdated -= RefreshDashboard;
 		TranscodeQueue.OnProgressUpdated -= RefreshProgress;
 		TranscodeQueue.OnQueueChanged -= RefreshDashboard;
+
+		SubQueue.OnChange -= RefreshDashboard;
+		ThumbQueue.OnProgressUpdated -= RefreshDashboard;
 	}
 }

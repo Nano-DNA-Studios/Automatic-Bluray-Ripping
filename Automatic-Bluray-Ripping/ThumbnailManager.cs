@@ -10,6 +10,8 @@ namespace Automatic_Bluray_Ripping
 
         public event Action? OnProgressUpdated;
 
+        public int GetQueueCount() => _queue.Count;
+
         public void EnqueueJob(VideoMetadata metadata)
         {
             _queue.Enqueue(metadata);

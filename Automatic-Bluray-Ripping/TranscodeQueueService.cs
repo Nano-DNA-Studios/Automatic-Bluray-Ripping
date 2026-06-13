@@ -13,6 +13,8 @@ namespace Automatic_Bluray_Ripping
         public double CurrentProgressPercent { get; private set; }
         public TranscodeJob? CurrentJob { get; private set; }
 
+        public int GetQueueCount() => _queue.Count;
+
         public void EnqueueJob(TranscodeJob job)
         {
             _queue.Enqueue(job);
