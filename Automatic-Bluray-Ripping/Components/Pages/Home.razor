@@ -98,7 +98,7 @@
 
 			@{
 				var jobs = TranscodeQueue.GetJobs();
-				var activeJob = jobs.FirstOrDefault();
+				var activeJob = TranscodeQueue.CurrentJob;
 			}
 
 			@if (jobs.Length == 0)

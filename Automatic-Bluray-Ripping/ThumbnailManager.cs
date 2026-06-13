@@ -1,5 +1,4 @@
-﻿using NanoDNA.ProcessRunner;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 
 namespace Automatic_Bluray_Ripping

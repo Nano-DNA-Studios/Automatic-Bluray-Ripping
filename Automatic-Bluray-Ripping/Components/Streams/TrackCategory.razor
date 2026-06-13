@@ -20,7 +20,7 @@
 			{
 				@foreach (SubtitleStreamItem subtitleStream in Category.SubtitleStreams)
 				{
-					<Automatic_Bluray_Ripping.Components.Streams.SubtitleStream Stream="@subtitleStream" />
+					<Automatic_Bluray_Ripping.Components.Streams.SubtitleStream Stream="@subtitleStream" Metadata="@Category.Metadata[0]" />
 				}
 			}
 

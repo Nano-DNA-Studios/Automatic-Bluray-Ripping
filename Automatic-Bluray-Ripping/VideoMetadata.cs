@@ -14,6 +14,10 @@ namespace Automatic_Bluray_Ripping
 
         public string ThumbnailBase64 { get; set; }
 
+        public int Width { get => VideoStreams.Length > 0 ? VideoStreams[0].Width : 0; }
+
+        public int Height { get => VideoStreams.Length > 0 ? VideoStreams[0].Height : 0; }
+
         public VideoStreamItem[] VideoStreams { get; set; }
 
         public AudioStreamItem[] AudioStreams { get; set; }
@@ -21,6 +25,20 @@ namespace Automatic_Bluray_Ripping
         public SubtitleStreamItem[] SubtitleStreams { get; set; }
 
         public ChapterStreamItem[] ChapterStreams { get; set; }
+
+        public VideoMetadata()
+        {
+            IsSelected = true;
+            FilePath = "";
+            Name = "";
+            Duration = 0;
+            ThumbnailBase64 = "file-video.svg";
+
+            VideoStreams = [];
+            AudioStreams = [];
+            SubtitleStreams = [];
+            ChapterStreams = [];
+        }
 
         public VideoMetadata(string filePath)
         {
@@ -77,6 +95,8 @@ namespace Automatic_Bluray_Ripping
     {
         public int ID { get; set; }
 
+        public int StreamNumber { get; set; }
+
         public bool IsSelected { get; set; }
 
         public int Width { get; set; }
@@ -94,6 +114,7 @@ namespace Automatic_Bluray_Ripping
         public VideoStreamItem(VideoStream video, int duration, int id)
         {
             this.ID = id;
+            this.StreamNumber = video.StreamNumber;
             this.Width = video.Width;
             this.Height = video.Height;
             this.FrameRate = video.FrameRate;
@@ -112,22 +133,25 @@ namespace Automatic_Bluray_Ripping
         public int ID { get; set; }
         public bool IsSelected { get; set; }
 
+        public int StreamNumber { get; set; }
+
         //Input Info
-        public string Format { get; set; } 
+        public string Format { get; set; }
         public int Channels { get; set; }
-        public string Language { get; set; } 
-        public double Bitrate { get; set; } 
+        public string Language { get; set; }
+        public double Bitrate { get; set; }
 
         //Output Info
         public string Name { get; set; }
-        public string Codec { get; set; } 
-        public string Mixdown { get; set; } 
+        public string Codec { get; set; }
+        public string Mixdown { get; set; }
 
         public string[] AllowableMixdowns { get; set; }
 
         public AudioStreamItem()
         {
             this.ID = 0;
+            this.StreamNumber = 0;
             this.IsSelected = false;
             this.Format = string.Empty;
             this.Channels = 0;
@@ -142,6 +166,7 @@ namespace Automatic_Bluray_Ripping
         public AudioStreamItem(AudioStream audio, int id, DefaultSettings settings)
         {
             this.ID = id;
+            this.StreamNumber = audio.StreamNumber;
             this.Format = $"{audio.CodecFriendly} - {audio.Name}";
             this.Channels = audio.Channel;
             this.Language = audio.Language;
@@ -149,7 +174,7 @@ namespace Automatic_Bluray_Ripping
             this.IsSelected = true;
 
             this.Name = $"{this.Language} - {this.Format}";
-            
+
             this.Codec = settings.DefaultAudioCodec;
             this.Mixdown = settings.GetMaxMixdown(Channels);
             this.AllowableMixdowns = settings.GetAllowableMixdowns(Channels);
@@ -157,7 +182,7 @@ namespace Automatic_Bluray_Ripping
 
         public string GetSignature() => $"[{ID} | {Format} | {Channels} | {Language}]";
 
-        public void CopyOutputValues (AudioStreamItem stream)
+        public void CopyOutputValues(AudioStreamItem stream)
         {
             this.Name = stream.Name;
             this.Codec = stream.Codec;
@@ -167,34 +192,44 @@ namespace Automatic_Bluray_Ripping
 
     public class SubtitleStreamItem
     {
-        public int ID { get; set; } = 0;
+        public int ID { get; set; }
+        public int StreamNumber { get; set; }
+
         public bool IsSelected { get; set; }
-        
-        public string Format { get; set; } = "";
-        public string Language { get; set; } = "";
+
+        public string Format { get; set; }
+        public string Language { get; set; }
 
         //Output
         public string Name { get; set; }
-        public bool BurnIn { get; set; } = false;
-        public bool Default { get; set; } = false;
+        public bool BurnIn { get; set; }
+        public bool Default { get; set; }
+
+        public string[] Images { get; set; }
 
         public SubtitleStreamItem()
         {
             this.ID = 0;
+            this.StreamNumber = 0;
             this.Name = "";
             this.Format = "";
             this.Language = "";
-            this.IsSelected= false;
+            this.IsSelected = false;
+            this.BurnIn = false;
+            this.Default = false;
+            this.Images = new string[0];
         }
 
         public SubtitleStreamItem(SubtitleStream subtitle, int id)
         {
             this.ID = id;
+            this.StreamNumber = subtitle.StreamNumber;
             this.Format = subtitle.Format;
             this.Language = subtitle.Language;
             this.IsSelected = true;
 
             this.Name = $"{Language} ({Format})";
+            this.Images = new string[0];
         }
 
         public string GetSignature() => $"[{ID} | {Format} | {Language}]";
@@ -210,12 +245,14 @@ namespace Automatic_Bluray_Ripping
     public class ChapterStreamItem
     {
         public int ID { get; set; } = 0;
+        public int StreamNumber { get; set; }
         public string Name { get; set; } = "";
         public bool IsSelected { get; set; }
 
         public ChapterStreamItem(ChapterStream chapter, int id)
         {
             this.ID = id;
+            this.StreamNumber = chapter.StreamNumber;
             this.Name = chapter.Name;
             this.IsSelected = true;
         }
