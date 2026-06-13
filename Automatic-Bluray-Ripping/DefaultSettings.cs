@@ -12,6 +12,8 @@
         
         public int MinVideoLength = 1;
 
+        public int SubtitleFramesExtracted = 40;
+
         public DefaultSettings ()
         {
             string? exePath = Path.GetDirectoryName(Environment.ProcessPath);

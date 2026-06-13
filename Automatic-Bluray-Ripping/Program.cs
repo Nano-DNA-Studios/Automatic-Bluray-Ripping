@@ -32,7 +32,7 @@ namespace Automatic_Bluray_Ripping
             ThumbnailQueue thumbnailQueue = new ThumbnailQueue();
             ThumbnailManager thumbnailManager = new ThumbnailManager(thumbnailQueue);
             SubtitleQueue subtitleQueue = new SubtitleQueue();
-            SubtitleManager subtitleManager = new SubtitleManager(subtitleQueue);
+            SubtitleManager subtitleManager = new SubtitleManager(subtitleQueue, settings);
 
             OpticalDriveManager driveManager = new OpticalDriveManager(settings);
             MakeMKVManager mkvManager = new MakeMKVManager(driveManager, settings);

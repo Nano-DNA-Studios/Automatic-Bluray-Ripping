@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using NanoDNA.ProcessRunner;
+using System.Diagnostics;
 
 namespace Automatic_Bluray_Ripping
 {
@@ -11,9 +12,11 @@ namespace Automatic_Bluray_Ripping
 
     public class SubtitleQueue
     {
-        private readonly PriorityQueue<SubtitleJob, int> _queue = new();
+        private readonly PriorityQueue<SubtitleJob, (int PriorityLevel, long SequenceNumber)> _queue = new();
         private readonly SemaphoreSlim _signal = new(0);
         private readonly object _lockObj = new();
+
+        private long _nextSequenceNumber = 0;
 
         public event Action? OnChange;
 
@@ -45,9 +48,9 @@ namespace Automatic_Bluray_Ripping
         {
             lock (_lockObj)
             {
-                for (int i = 0; i < metadata.SubtitleStreams.Length - 1; i++)
+                for (int i = 0; i < metadata.SubtitleStreams.Length; i++)
                 {
-                    _queue.Enqueue(new SubtitleJob { Metadata = metadata, Index = i }, 10);
+                    _queue.Enqueue(new SubtitleJob { Metadata = metadata, Index = i }, (10, _nextSequenceNumber++));
                     _signal.Release();
                 }
             }
@@ -57,11 +60,9 @@ namespace Automatic_Bluray_Ripping
 
         public void PriorityEnqueue(VideoMetadata metadata, int index)
         {
-            Console.WriteLine("Priority!");
-
             lock (_lockObj)
             {
-                _queue.Enqueue(new SubtitleJob { Metadata = metadata, Index = index }, 0);
+                _queue.Enqueue(new SubtitleJob { Metadata = metadata, Index = index }, (0, _nextSequenceNumber++));
                 _signal.Release();
             }
 
@@ -71,20 +72,22 @@ namespace Automatic_Bluray_Ripping
         public async Task<SubtitleJob> DequeueJobAsync(CancellationToken cancellationToken)
         {
             await _signal.WaitAsync(cancellationToken);
-            _queue.TryDequeue(out var metadata, out int priority);
+            _queue.TryDequeue(out var metadata, out _);
             NotifyStateChanged();
             return metadata!;
         }
-
     }
 
     public class SubtitleManager : BackgroundService
     {
         public SubtitleQueue _queueService;
 
-        public SubtitleManager(SubtitleQueue queue)
+        private DefaultSettings _settings { get; set; }
+
+        public SubtitleManager(SubtitleQueue queue, DefaultSettings settings)
         {
             _queueService = queue;
+            _settings = settings;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -99,15 +102,43 @@ namespace Automatic_Bluray_Ripping
             }
         }
 
+        public int GetSubtitleFrameCount(SubtitleJob subtitleJob)
+        {
+            ProcessRunner process = new ProcessRunner("ffprobe");
+
+            string args = $"-v error -select_streams s:{subtitleJob.Index} -show_entries stream_tags -of default=noprint_wrappers=1 \"{subtitleJob.Metadata.FilePath}\"";
+            int numOfFrames = 0;
+
+            process.STDOutputReceived += (sender, args) =>
+            {
+                if (string.IsNullOrEmpty(args.Data))
+                    return;
+
+                if (!args.Data.Contains("TAG:NUMBER_OF_FRAMES"))
+                    return;
+
+                string frames = args.Data.Split("=")[1];
+
+                numOfFrames = int.Parse(frames);
+            };
+
+            process.Run(args);
+
+            return numOfFrames;
+        }
+
         public async Task ExtractSubtitleImagesToBase64Async(SubtitleJob subtitleJob)
         {
             List<string> base64Images = new List<string>();
 
-            string singlePassArgs = $"-probesize 50M -analyzeduration 50M -f lavfi -i color=c=black@0:s={subtitleJob.Metadata.Width}x{subtitleJob.Metadata.Height} -i \"{subtitleJob.Metadata.FilePath}\" -filter_complex \"[0:v][1:s:{subtitleJob.Index}]overlay,mpdecimate\" -vsync vfr -pix_fmt rgba -frames:v 50 -f image2pipe -c:v png pipe:1";
+            int frames = GetSubtitleFrameCount(subtitleJob);
 
-            Console.WriteLine(singlePassArgs);
+            string singlePassArgs;
 
-            Console.WriteLine("Starting Combined Image Extraction");
+            if (frames < _settings.SubtitleFramesExtracted)
+                singlePassArgs = $"-probesize 20M -analyzeduration 20M -f lavfi -i color=c=black@0:s={subtitleJob.Metadata.Width}x{subtitleJob.Metadata.Height} -i \"{subtitleJob.Metadata.FilePath}\" -filter_complex \"[0:v][1:s:{subtitleJob.Index}]overlay=shortest=1,mpdecimate\" -vsync vfr -pix_fmt rgba -frames:v {frames - 1} -f image2pipe -c:v png pipe:1";
+            else
+                singlePassArgs = $"-probesize 20M -analyzeduration 20M -f lavfi -i color=c=black@0:s={subtitleJob.Metadata.Width}x{subtitleJob.Metadata.Height} -i \"{subtitleJob.Metadata.FilePath}\" -filter_complex \"[0:v][1:s:{subtitleJob.Index}]overlay=shortest=1,mpdecimate\" -vsync vfr -pix_fmt rgba -frames:v {_settings.SubtitleFramesExtracted} -f image2pipe -c:v png pipe:1";
 
             ProcessStartInfo pngStartInfo = new ProcessStartInfo
             {
@@ -126,21 +157,15 @@ namespace Automatic_Bluray_Ripping
                 using (MemoryStream pngStream = new MemoryStream())
                 {
                     Task readOutputTask = pngProcess.StandardOutput.BaseStream.CopyToAsync(pngStream);
-                    //Task<string> readErrorTask = pngProcess.StandardError.ReadToEndAsync();
 
                     await readOutputTask;
                     await pngProcess.WaitForExitAsync();
 
-                    Console.WriteLine("Finished Extracting");
-
                     byte[] allPngBytes = pngStream.ToArray();
 
-                    // Slice the continuous pipe buffer into distinct individual PNG byte arrays
                     List<byte[]> individualImages = SplitPngStream(allPngBytes);
                     foreach (var imgBytes in individualImages)
-                    {
                         base64Images.Add($"data:image/png;base64,{Convert.ToBase64String(imgBytes)}");
-                    }
                 }
             }
 
@@ -156,7 +181,6 @@ namespace Automatic_Bluray_Ripping
             byte[] pngHeader = new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
             List<int> positions = new List<int>();
 
-            // Locate the start indexes of each PNG file inside the master byte array
             for (int i = 0; i <= streamBytes.Length - pngHeader.Length; i++)
             {
                 bool match = true;
@@ -171,7 +195,6 @@ namespace Automatic_Bluray_Ripping
                 if (match) positions.Add(i);
             }
 
-            // Extract individual byte slices
             for (int i = 0; i < positions.Count; i++)
             {
                 if (i % 2 == 0)
