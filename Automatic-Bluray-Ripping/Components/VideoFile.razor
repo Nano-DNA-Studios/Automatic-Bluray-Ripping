@@ -1,0 +1,119 @@
+﻿@rendermode InteractiveServer
+@using MediaInfo;
+@using MediaInfo.Model;
+
+<div style="margin: 10px;" class="@(@GetClass(Metadata.IsSelected))" @onclick="(e) => { Metadata.IsSelected = !Metadata.IsSelected; }">
+
+	<div style="display: flex; flex-direction: row; justify-content: flex-start; padding: 10px">
+		<div>
+			<img src="@Metadata.ThumbnailBase64" alt="Video Thumbnail" style="width: 400px; height: auto; border-radius: 4px;" />
+		</div>
+
+		<div style="margin: 10px;">
+
+			<div style="display: flex; flex-direction: row; justify-content: flex-start;" @onclick:stopPropagation="true">
+				<input @bind="@Metadata.Name" style="font-size: x-large;" />
+				<h2>.mkv</h2>
+			</div>
+
+			@if (Metadata.VideoStreams.Length == 1)
+			{
+				<h5>Resolution : @Metadata.VideoStreams[0].Width x @Metadata.VideoStreams[0].Height (@Metadata.VideoStreams[0].FrameRate fps)</h5>
+				<h5>Codec : @Metadata.VideoStreams[0].CodecName / @Metadata.VideoStreams[0].Format</h5>
+				<h5>Duration : @Metadata.VideoStreams[0].Duration</h5>
+			}
+
+			<p>@Metadata.FilePath</p>
+		</div>
+	</div>
+
+	<div style="display: flex; flex-direction: row; justify-content: flex-start; padding: 10px; gap: 40px; ">
+
+		@if (Metadata.VideoStreams.Length > 1)
+		{
+			<div style="background-color: gray; border-radius: 10px; padding: 20px;" @onclick:stopPropagation="true">
+
+				<h3>Video Info</h3>
+
+				@foreach (VideoStreamItem videoStream in Metadata.VideoStreams)
+				{
+					<div style="margin-left: 20px; border-left: 2px solid #ccc; padding: 10px; " class="@GetClass(videoStream.IsSelected)" @onclick="(e) => { videoStream.IsSelected = !videoStream.IsSelected; }" @onclick:stopPropagation="true">
+						<h5>ID : @videoStream.ID</h5>
+						<h5>Resolution : @videoStream.Width x @videoStream.Height (@videoStream.FrameRate fps)</h5>
+						<h5>Codec : @videoStream.CodecName / @videoStream.Format</h5>
+						<h5>Duration : @videoStream.Duration</h5>
+					</div>
+				}
+
+			</div>
+		}
+
+		@if (Metadata.AudioStreams.Length > 0)
+		{
+			<div style="background-color: gray; border-radius: 10px; padding: 20px;" @onclick:stopPropagation="true">
+
+				<details>
+					<summary>
+						<h3>Audio Info (@Metadata.AudioStreams.Length Tracks)</h3>
+					</summary>
+
+					@foreach (AudioStreamItem audioStream in Metadata.AudioStreams)
+					{
+						<Automatic_Bluray_Ripping.Components.Streams.AudioStream Stream="audioStream" />
+					}
+				</details>
+
+			</div>
+		}
+
+		@if (Metadata.SubtitleStreams.Length > 0)
+		{
+			<div style="background-color: gray; border-radius: 10px; padding: 20px;" @onclick:stopPropagation="true">
+
+				<details>
+					<summary>
+						<h3>Subtitle Info (@Metadata.SubtitleStreams.Length Tracks)</h3>
+					</summary>
+
+					@foreach (SubtitleStreamItem subtitleStream in Metadata.SubtitleStreams)
+					{
+						<Automatic_Bluray_Ripping.Components.Streams.SubtitleStream Stream="@subtitleStream" Metadata="@Metadata" />
+					}
+				</details>
+
+			</div>
+		}
+
+		@if (Metadata.ChapterStreams.Length > 0)
+		{
+			<div style="background-color: gray; border-radius: 10px; padding: 20px;" @onclick:stopPropagation="true">
+
+				<details>
+					<summary>
+						<h3>Chapter Info (@Metadata.ChapterStreams.Length Tracks)</h3>
+					</summary>
+
+					@foreach (ChapterStreamItem chapterStream in Metadata.ChapterStreams)
+					{
+						<div style="margin-left: 20px; border-left: 2px solid #ccc; padding-left: 10px; " class="@GetClass(chapterStream.IsSelected)" @onclick="(e) => { chapterStream.IsSelected = !chapterStream.IsSelected; }" @onclick:stopPropagation="true">
+
+							<h5>ID : @chapterStream.ID</h5>
+							<h5>Name : @chapterStream.Name</h5>
+						</div>
+					}
+				</details>
+			</div>
+		}
+	</div>
+</div>
+
+@code {
+
+	[Parameter]
+	public VideoMetadata Metadata { get; set; } = new VideoMetadata("");
+
+	private string GetClass(bool isSelected)
+	{
+		return isSelected ? "video-card selected" : "video-card unselected";
+	}
+}

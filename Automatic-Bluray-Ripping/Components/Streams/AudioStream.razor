@@ -1,0 +1,39 @@
+﻿@rendermode InteractiveServer
+@inject DefaultSettings Settings
+
+<div style="margin-left: 20px; border-left: 2px solid #ccc; padding: 10px; " class="@(Stream.IsSelected ? "audio-card selected" : "audio-card unselected")" @onclick="(e) => { Stream.IsSelected = !Stream.IsSelected; }" @onclick:stopPropagation="true">
+
+	<h5>(@Stream.ID) - @Stream.Language (@Stream.Format, @Stream.Channels Ch, @Stream.Bitrate kbps)</h5>
+
+	<div style="display: flex; flex-direction: row; justify-content: flex-start; gap:10px" @onclick:stopPropagation="true">
+		<h5>Name:</h5>
+		<input @bind="@Stream.Name" style="width:100%" />
+	</div>
+
+	<div style="display: flex; flex-direction: row; justify-content: flex-start; gap:10px" @onclick:stopPropagation="true">
+		<h5>Codec:</h5>
+		<select id="codecSelect" class="form-control" @bind="@Stream.Codec">
+			@foreach (string codec in Settings.AudioCodecs.Keys)
+			{
+				<option value="@Settings.AudioCodecs[codec]">@codec</option>
+			}
+		</select>
+	</div>
+
+	<div style="display: flex; flex-direction: row; justify-content: flex-start; gap:10px" @onclick:stopPropagation="true">
+		<h5>Mixdown:</h5>
+		<select id="codecSelect" class="form-control" @bind="@Stream.Mixdown">
+			@foreach (string mixdown in Stream.AllowableMixdowns)
+			{
+				<option value="@mixdown">@mixdown</option>
+			}
+		</select>
+	</div>
+
+</div>
+
+@code {
+
+	[Parameter]
+	public AudioStreamItem Stream { get; set; } = new AudioStreamItem();
+}

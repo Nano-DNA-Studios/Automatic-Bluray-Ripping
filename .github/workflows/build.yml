@@ -1,0 +1,64 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  pull_request:
+  
+permissions:
+  contents: read 
+  packages: read
+
+jobs:
+  setup:
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
+    steps:
+      - name: Install .NET to Device
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.x.x"
+
+      - name: Clone and Checkout the Repo
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+          clean: true
+
+      - name: Run .NET Restore to reload NuGet Packages
+        run: dotnet restore
+
+      - name: Create Websites Folder
+        shell: bash
+        run: mkdir Websites
+        
+  build-source:
+    needs: setup
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
+    strategy:
+      matrix:
+        platforms: ["win-x64", "linux-x64"]
+    steps:
+      - name: Build as Standalone Source
+        shell: bash
+        run: dotnet publish ${{ github.event.repository.name }}/${{ github.event.repository.name }}.csproj -c Release -r "${{ matrix.platforms }}" --self-contained true
+
+  build-docker:
+    needs: build-source
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
+    steps:
+      - name: Build Docker Image
+        shell: bash
+        run: docker build -t ghcr.io/nano-dna-studios/automatic-bluray-ripping:latest .
+
+  upload-source:
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
+    needs: [build-source]
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    strategy:
+      matrix:
+        platforms: ["win-x64", "linux-x64"]
+    steps:
+      - name: Compress Standalone Source
+        shell: bash
+        run: tar -czf ./Websites/${{ github.event.repository.name }}-${{ matrix.platforms }}.tar.gz -C ${{ github.event.repository.name }}/bin/Release/net8.0/${{ matrix.platforms }}/publish .

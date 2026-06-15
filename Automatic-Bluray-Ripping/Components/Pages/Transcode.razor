@@ -1,0 +1,72 @@
+﻿@page "/transcode"
+@using System.Diagnostics
+@rendermode InteractiveServer
+@inject TranscodeQueueService QueueService
+
+<PageTitle>Transcode</PageTitle>
+
+<div>
+	<h3>Transcode</h3>
+
+	<button style="padding:10px" @onclick="@QueueService.ClearCompletedJobs" >
+		Clear
+	</button>
+
+	@foreach (var job in QueueService.GetJobs())
+	{
+		<div style="display: flex; flex-direction: row; justify-content: flex-start; padding: 10px; border-radius: 10px; background-color: gray; margin:10px; width:100%">
+
+			<div>
+				<img src="@job.ThumbnailBase64" alt="Video Thumbnail" style="width: 400px; height: auto; border-radius: 4px;" />
+			</div>
+
+			<div style="padding: 10px;">
+				<h3>@job.Name</h3>
+				<h5>@job.OutputFilePath</h5>
+				<p>@job.GetFullArgument()</p>
+				<progress value="@job.Progress" max="100" style="width: 100%; height: 25px;"></progress>
+			</div>
+		</div>
+	}
+
+	<video controls width="100%" style="max-width: 800px;">
+		<source src="@VideoURL" type="video/x-matroska" />
+		@* <track src="@LocalSubtitleUrl" kind="subtitles" srclang="en" label="English" default /> *@
+		Your browser does not support the video tag or container format.
+	</video>
+</div>
+
+@code {
+
+	private string VideoURL = "/transcodes/DANDADAN_S1_D1/test.mkv";
+
+	private double CurrentProgressPercent = 0;
+
+	protected override void OnInitialized()
+	{
+		CurrentProgressPercent = QueueService.CurrentProgressPercent;
+
+		QueueService.OnProgressUpdated += HandleProgressUpdate;
+		QueueService.OnQueueChanged += HandleQueueRefresh;
+	}
+
+	private void HandleProgressUpdate(double progress)
+	{
+		InvokeAsync(() =>
+		{
+			CurrentProgressPercent = progress;
+			StateHasChanged();
+		});
+	}
+
+	private void HandleQueueRefresh()
+	{
+		InvokeAsync(StateHasChanged);
+	}
+
+	public void Dispose()
+	{
+		QueueService.OnProgressUpdated -= HandleProgressUpdate;
+		QueueService.OnQueueChanged -= HandleQueueRefresh;
+	}
+}

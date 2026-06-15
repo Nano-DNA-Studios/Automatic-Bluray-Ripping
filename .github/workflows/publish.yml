@@ -1,0 +1,102 @@
+name: Publish
+
+on:
+  release:
+    types: [published]  
+  
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  setup:
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
+    steps:
+      - name: Install .NET to Device
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.x.x"
+
+      - name: Clone and Checkout the Repo
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+          clean: true
+
+      - name: Run .NET Restore to reload NuGet Packages
+        run: dotnet restore
+
+      - name: Create Websites Folder
+        shell: bash
+        run: mkdir Websites
+
+  version:
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
+    needs: setup
+    outputs:
+      version: ${{ steps.get-tag-version.outputs.version }}
+
+    steps:
+      - name: Get Tag Version
+        id: get-tag-version
+        shell: bash
+        run: |
+          tagName="${{ github.event.release.tag_name }}"
+          version="${tagName#v}"  # Removes the 'v' prefix if it exists
+          echo "Extracted version $version from tag"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          
+  build-source:
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
+    needs: version
+    strategy:
+      matrix:
+        platforms: ["win-x64", "linux-x64"]
+    steps:
+      - name: Build as Standalone Source
+        shell: bash
+        run: dotnet publish ${{ github.event.repository.name }}/${{ github.event.repository.name }}.csproj -c Release -r "${{ matrix.platforms }}" -p:Version=${{ needs.version.outputs.version }} --self-contained true
+  
+  build-docker:
+    needs: [build-source, version]
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
+    steps:
+      - name: Build Docker Image
+        shell: bash
+        run: docker build -t ghcr.io/nano-dna-studios/automatic-bluray-ripping:${{ needs.version.outputs.version }} .
+        
+  upload-docker:
+    needs: [build-docker, version]
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push
+        shell: bash
+        run: docker push ghcr.io/nano-dna-studios/automatic-bluray-ripping:${{ needs.version.outputs.version }}
+
+  upload-source:
+    runs-on: ["self-hosted", "run-${{github.run_id}}"]
+    needs: [build-source, version]
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    strategy:
+      matrix:
+        platforms: ["win-x64", "linux-x64"]
+    steps:
+      - name: Compress Standalone Source
+        shell: bash
+        run: tar -czf ./Websites/${{ github.event.repository.name }}-${{ needs.version.outputs.version }}-${{ matrix.platforms }}.tar.gz -C ${{ github.event.repository.name }}/bin/Release/net8.0/${{ matrix.platforms }}/publish .
+      
+      - name: Upload Standalone Sources to Release
+        working-directory: ./Websites
+        shell: bash
+        run: |
+          echo "Uploading ${{ github.event.repository.name }}-${{ needs.version.outputs.version }}-${{ matrix.platforms }}.tar.gz as a Release Asset"
+          gh release upload "${{ github.event.release.tag_name }}" "${{ github.event.repository.name }}-${{ needs.version.outputs.version }}-${{ matrix.platforms }}.tar.gz" --repo ${{ github.repository }}

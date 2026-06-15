@@ -1,0 +1,82 @@
+﻿@page "/bluray"
+@rendermode InteractiveServer
+@inject OpticalDriveManager DriveManager
+
+<h3>Optical Drives</h3>
+
+@if (DriveManager.IsScanning)
+{
+	<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px;">
+		<div class="spinner"></div>
+		<p style="margin-top: 15px; font-weight: 500; color: #555;">Scanning hardware...</p>
+	</div>
+}
+
+@if (DriveManager.HasScanned)
+{
+	@if (!DriveManager.IsLocked)
+	{
+		<div style="font-size:x-large">
+			<button @onclick="@ScanDrives">
+				Scan Drives
+			</button>
+			<button @onclick="@StartRips">
+				Rip Drives
+			</button>
+		</div>
+	}
+
+	<div style="margin-top: 10px">
+
+		@foreach (OpticalDrive drive in DriveManager.OpticalDrives)
+		{
+			<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width:fit-content; background-color: gray; border-radius: 10px; padding: 10px">
+				<span style="font-size:x-large">
+					(@drive.ID) -
+					<input @bind="@drive.DiscName" />
+					(@drive.DriveName)
+				</span>
+
+				<div style="display: flex; flex-direction: row; align-items: center; justify-content: center; width:100%; font-size: large; gap: 10px">
+					File Progress:
+					<progress style="flex-grow: 1" value="@drive.Progress" max="1" />
+				</div>
+
+				<div style="display: flex; flex-direction: row; align-items: center; justify-content: center; width:100%; font-size: large; gap: 10px">
+					All Files Progress:
+					<progress style="flex-grow: 1" value="@drive.GlobalProgress" max="1" />
+				</div>
+			</div>
+		}
+	</div>
+}
+
+@code {
+
+	protected override void OnInitialized()
+	{
+		DriveManager.OnProgressUpdated += UpdateProgress;
+	}
+
+	private async Task ScanDrives()
+	{
+		await DriveManager.ReadOpticalDrives();
+	}
+
+	private async Task StartRips()
+	{
+		await DriveManager.RipOpticalDiscs();
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private void UpdateProgress()
+	{
+		InvokeAsync(StateHasChanged);
+	}
+
+	public void Dispose()
+	{
+		Console.WriteLine("Dispose Bluray");
+		DriveManager.OnProgressUpdated -= UpdateProgress;
+	}
+}

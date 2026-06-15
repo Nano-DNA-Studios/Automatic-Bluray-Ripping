@@ -1,0 +1,46 @@
+﻿@using Automatic_Bluray_Ripping.Components.Streams
+@rendermode InteractiveServer
+
+<details style="background-color: darkgray; padding: 10px; border-radius: 10px; margin: 10px">
+	<summary style="margin:10px" @onclick:stopPropagation="true">
+		<input type="checkbox"
+			   class="form-check-input"
+			   id="include"
+			   @bind="@Category.IsSelected"
+			   style="width: 30px; height:30px; margin:0px" />
+
+		<input style="margin:0px" value="@Category.Name" @onchange="(e) => { Category.Name = (string)(e.Value ?? string.Empty); }" />
+		(@Category.Metadata.Count Videos)
+		<button style="margin:0px" @onclick="@ExecuteApplyAll">
+			Apply to All
+		</button>
+	</summary>
+
+	<span style="margin: 10px; font-size: x-large">
+		Naming Pattern :
+		<input @bind="@Category.NamingPattern" style="flex-grow: 1;" />
+	</span>
+
+	<div style="display: flex; flex-direction: row; justify-content: flex-start; padding: 10px; gap: 40px; ">
+		<TrackCategory CategoryType="Audio" Category="@Category" />
+		<TrackCategory CategoryType="Subtitle" Category="@Category" />
+		<TrackCategory CategoryType="Chapter" Category="@Category" />
+	</div>
+
+	<div>
+		@foreach (var metadata in Category.Metadata)
+		{
+			<VideoFile Metadata="@metadata" />
+		}
+	</div>
+</details>
+
+@code {
+	[Parameter]
+	public VideoCategoryMetadata Category { get; set; } = new VideoCategoryMetadata("");
+
+	private void ExecuteApplyAll()
+	{
+		Category.ApplyOutputConfig();
+	}
+}

@@ -1,0 +1,54 @@
+﻿@rendermode InteractiveServer
+@inject SubtitleQueue SubQueue
+
+<div style="margin-left: 20px; border-left: 2px solid #ccc; padding: 10px;" class="@(Stream.IsSelected ? "subtitle-card selected" : "subtitle-card unselected")" @onclick="(e) => { Stream.IsSelected = !Stream.IsSelected; }" @onclick:stopPropagation="true">
+	<h5>(@Stream.ID) - @Stream.Language (@Stream.Format)</h5>
+
+	<div style="display: flex; flex-direction: row; justify-content: flex-start; align-items:center; gap:10px;" @onclick:stopPropagation="true">
+		<h5 style="margin:0px;">Name:</h5>
+		<input @bind="@Stream.Name" style="width:100%; margin:0px;" />
+	</div>
+
+	<div style="display: flex; flex-direction: row; justify-content: flex-start; align-items:center; gap:10px;">
+		<input type="checkbox"
+			   class="form-check-input"
+			   id="burn-in"
+			   @bind="@Stream.BurnIn"
+			   style="width: 30px; height:30px; margin:0px;" />
+
+		<h5 style="margin:0px;">Burn In</h5>
+	</div>
+
+	<div style="display: flex; flex-direction: row; justify-content: flex-start; align-items:center; gap:10px; ">
+		<input type="checkbox"
+			   class="form-check-input"
+			   id="default"
+			   @bind="@Stream.Default"
+			   style="width: 30px; height:30px; margin:0px" />
+
+		<h5 style="margin:0px;">Default</h5>
+	</div>
+
+	<div style="display: flex; flex-direction: row; justify-content: flex-start; align-items:center; gap:10px;margin-top: 10px;" @onclick:stopPropagation="true">
+		<button style=" flex-grow:1;" @onclick="PreviewSubtitles">
+			Preview
+		</button>
+		@if (Stream.Images.Length == 0)
+		{
+			<div class="spinner" style="width:28px; height:28px;"></div>
+		}
+	</div>
+</div>
+
+@code {
+	[Parameter]
+	public SubtitleStreamItem Stream { get; set; } = new SubtitleStreamItem();
+
+	[Parameter]
+	public VideoMetadata Metadata { get; set; } = new VideoMetadata();
+
+	private void PreviewSubtitles()
+	{
+		SubQueue.ShowPreview(Metadata, Stream);
+	}
+}
