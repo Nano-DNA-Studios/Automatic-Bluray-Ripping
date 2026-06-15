@@ -49,6 +49,8 @@ RUN apt-get update && apt-get install -y \
 # Copy the compiled files directly from the builder stage
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
 COPY --from=builder /usr/local/lib/ /usr/local/lib/
+COPY --from=builder /usr/bin/makemkvcon /usr/bin/makemkvcon
+COPY --from=builder /usr/share/MakeMKV/ /usr/share/MakeMKV/
 
 # Register the newly transferred libraries inside Ubuntu
 RUN ldconfig
