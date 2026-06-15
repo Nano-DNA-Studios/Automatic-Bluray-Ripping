@@ -16,9 +16,21 @@ namespace Automatic_Bluray_Ripping
 
     public class Program
     {
+        private static int HTTPPort = 80;
+        private static int HTTPSPort = 443;
+
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            builder.WebHost.ConfigureKestrel(options =>
+            {
+                options.ListenAnyIP(HTTPPort); // HTTP
+                //options.ListenAnyIP(HTTPSPort, listenOptions =>
+                //{
+                //    listenOptions.UseHttps(certPath, certPassword);
+                //});
+            });
 
             // Add services to the container.
             builder.Services.AddRazorComponents()
@@ -77,11 +89,9 @@ namespace Automatic_Bluray_Ripping
 
             AppServices.Provider = app.Services;
 
-            string transcodesPath = Path.Combine(AppContext.BaseDirectory, "Transcodes");
-
             app.UseStaticFiles(new StaticFileOptions
             {
-                FileProvider = new PhysicalFileProvider(transcodesPath),
+                FileProvider = new PhysicalFileProvider(settings.DefaultTranscodeDirectory),
                 RequestPath = "/transcodes",
                 ContentTypeProvider = provider
             });

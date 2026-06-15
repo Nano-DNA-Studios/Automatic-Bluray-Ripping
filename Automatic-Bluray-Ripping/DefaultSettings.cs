@@ -21,6 +21,8 @@
             if (exePath == null)
                 exePath = "./";
 
+            exePath = Path.Combine(exePath, "Media");
+
             DefaultRipDirectory = Path.Combine(exePath, "Rips");
             DefaultMKVDirectory = Path.Combine(exePath, "MKVs");
             DefaultTranscodeDirectory = Path.Combine(exePath, "Transcodes");
