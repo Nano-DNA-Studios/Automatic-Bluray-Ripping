@@ -74,7 +74,7 @@ namespace Automatic_Bluray_Ripping
                 if (string.IsNullOrEmpty(args.Data))
                     return;
 
-                string pattern = @"^DRV:(?<index>\d+),(?<visible>\d+),(?<id>\d+),(?<type>\d+),""(?<name>[^""]*)"",""(?<discname>[^""]*)"",""(?<letter>[A-Z]:)?""$";
+                string pattern = @"^DRV:(?<index>\d+),(?<visible>\d+),(?<id>\d+),(?<type>\d+),""(?<name>[^""]*)"",""(?<discname>[^""]*)"",""(?<path>[^""]*)""";
 
                 Match match = Regex.Match(args.Data, pattern);
 
