@@ -86,7 +86,6 @@ namespace Automatic_Bluray_Ripping
             }
 
             app.UseHttpsRedirection();
-
             app.UseStaticFiles();
             app.UseAntiforgery();
 

@@ -1,3 +1,4 @@
+# Use the Ubuntu Docker Image
 FROM ubuntu:24.04
 
 # Define the production account configuration
