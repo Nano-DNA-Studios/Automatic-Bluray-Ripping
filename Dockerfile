@@ -1,9 +1,10 @@
-# STAGE 1: Builder Stage (Install the Heavy Software)
-FROM ubuntu:24.04 AS builder
+FROM ubuntu:24.04
 
+# Define the production account configuration
+ENV USERNAME=ABR
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install compilation tools and build dependencies
+# Combine all compilation tools, runtime tools, and dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     pkg-config \
@@ -14,45 +15,28 @@ RUN apt-get update && apt-get install -y \
     zlib1g-dev \
     ca-certificates \
     curl \
+    ffmpeg \
+    handbrake-cli \
     && mkdir -p /tmp/makemkv \
     && cd /tmp/makemkv \
-    && curl -fsSL "https://www.makemkv.com/download/makemkv-oss-1.18.3.tar.gz" -o oss.tar.gz \
-    && curl -fsSL "https://www.makemkv.com/download/makemkv-bin-1.18.3.tar.gz" -o bin.tar.gz \
+    && curl -fsSL "https://www.makemkv.com/download/makemkv-oss-1.18.4.tar.gz" -o oss.tar.gz \
+    && curl -fsSL "https://www.makemkv.com/download/makemkv-bin-1.18.4.tar.gz" -o bin.tar.gz \
     && tar -xzf oss.tar.gz \
     && tar -xzf bin.tar.gz \
-    && cd makemkv-oss-1.18.3 \
+    && cd makemkv-oss-1.18.4 \
     && ./configure --disable-gui \
     && make -j$(nproc) \
     && make install \
-    && cd ../makemkv-bin-1.18.3 \
+    && cd ../makemkv-bin-1.18.4 \
     && mkdir -p tmp \
     && touch tmp/eula_accepted \
     && make -j$(nproc) \
-    && make install
-
-# STAGE 2: Build the container using results from previous build
-FROM ubuntu:24.04
-
-# Define the production account configuration
-ENV USERNAME=ABR
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install runtime media players and base certificates
-RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    ca-certificates \
-    libssl3 \
-    libexpat1 \
+    && make install \
+    && rm -rf /tmp/makemkv \
     && useradd -ms /bin/bash ${USERNAME} \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the compiled files directly from the builder stage
-COPY --from=builder /usr/local/bin/ /usr/local/bin/
-COPY --from=builder /usr/local/lib/ /usr/local/lib/
-COPY --from=builder /usr/bin/makemkvcon /usr/bin/makemkvcon
-COPY --from=builder /usr/share/MakeMKV/ /usr/share/MakeMKV/
-
-# Register the newly transferred libraries inside Ubuntu
+# Register the newly built libraries
 RUN ldconfig
 
 # Set the operational workspace
@@ -63,6 +47,9 @@ COPY ./Automatic-Bluray-Ripping/bin/Release/net8.0/linux-x64/publish/ .
 
 # Secure file permissions
 RUN chown -R ${USERNAME}:${USERNAME} /ABR
+
+# Add the Key Registration
+RUN mkdir -p ~/.MakeMKV && echo 'app_Key = "T-BSaJ6gwgMx4eIggWkVYXiVP_6zehm7WAO9dEydvzOHFHoZ6YQ82BL5cGpYDxvyRWnS"' > ~/.MakeMKV/settings.conf
 
 # Drop privileges to non-root account
 USER ABR
