@@ -20,6 +20,8 @@ services:
     devices:
       - /dev/sr0:/dev/sr0
       - /dev/sr1:/dev/sr1
+      - /dev/sg0:/dev/sg0
+      - /dev/sg3:/dev/sg3
     environment:
       - PUID=1000
       - PGID=1000
