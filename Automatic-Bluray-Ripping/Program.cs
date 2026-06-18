@@ -19,7 +19,7 @@ namespace Automatic_Bluray_Ripping
         private static int HTTPPort = 80;
         private static int HTTPSPort = 443;
 
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -51,24 +51,6 @@ namespace Automatic_Bluray_Ripping
             MediaScannerManager mediaScannerManager = new MediaScannerManager(mkvManager, thumbnailQueue, subtitleQueue, transcodeQueue, settings);
             TranscodeManager transcodeManager = new TranscodeManager(transcodeQueue);
             
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await driveManager.ReadOpticalDrives();
-                    await mkvManager.ScanForBackups();
-                    mediaScannerManager.LoadHandbrakePresets();
-                    mediaScannerManager.LoadMKVBackups();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Something went wrong lmao {ex.Message}");
-                }
-                
-                //transcodeManager.LoadHandbrakePresets();
-                //transcodeManager.ScanBackups();
-            });
-
             builder.Services.AddSingleton<DefaultSettings>(settings);
             builder.Services.AddSingleton<TranscodeQueueService>(transcodeQueue);
             builder.Services.AddSingleton<OpticalDriveManager>(driveManager);
@@ -80,7 +62,6 @@ namespace Automatic_Bluray_Ripping
             builder.Services.AddHostedService<TranscodeManager>(provider => transcodeManager);
             builder.Services.AddHostedService<ThumbnailManager>(provider => thumbnailManager);
             builder.Services.AddHostedService<SubtitleManager>(provider => subtitleManager);
-
 
             var app = builder.Build();
 
@@ -111,6 +92,18 @@ namespace Automatic_Bluray_Ripping
 
             app.MapRazorComponents<App>()
                 .AddInteractiveServerRenderMode();
+
+            try
+            {
+                await driveManager.ReadOpticalDrives();
+                await mkvManager.ScanForBackups();
+                mediaScannerManager.LoadHandbrakePresets();
+                mediaScannerManager.LoadMKVBackups();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Something went wrong lmao {ex.Message}");
+            }
 
             app.Run();
         }
