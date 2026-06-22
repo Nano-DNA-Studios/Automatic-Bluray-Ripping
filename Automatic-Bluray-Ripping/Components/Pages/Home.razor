@@ -14,9 +14,9 @@
 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; width: 100%; max-width: 1200px; margin: 0 auto; padding: 20px;">
 
 	@* CARD 1: BLURAY RIPPER *@
-	<div @onclick='() => Nav.NavigateTo("/bluray")' style="cursor: pointer; text-align: center; padding: 20px; background-color: #2d2d2d; color: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-		<img style="width: 120px; height: 120px; margin-bottom: 15px;" src="hdd.svg" alt="Backup Bluray" />
-		<h2 style="margin-bottom: 15px;">1. Rip Bluray</h2>
+	<div @onclick='() => Nav.NavigateTo("/ripping")' style="cursor: pointer; text-align: center; padding: 20px; background-color: #2d2d2d; color: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+		<img style="width: 120px; height: 120px; margin-bottom: 15px;" src="disc-fill.svg" alt="Backup Bluray" />
+		<h2 style="margin-bottom: 15px;">1. Ripping</h2>
 
 		<div style="background-color: #3d3d3d; padding: 15px; border-radius: 8px; text-align: left; font-size: 0.95rem;">
 			@if (DriveManager.IsScanning)
@@ -86,8 +86,8 @@
 
 	@* CARD 3: TRANSCODE INTAKE SETUP *@
 	<div @onclick='() => Nav.NavigateTo("/configuretranscode")' style="cursor: pointer; text-align: center; padding: 20px; background-color: #2d2d2d; color: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-		<img style="width: 120px; height: 120px; margin-bottom: 15px;" src="convert.svg" alt="Configure Transcode" />
-		<h2 style="margin-bottom: 15px;">3. Configuration</h2>
+		<img style="width: 120px; height: 120px; margin-bottom: 15px;" src="configure.svg" alt="Configure Transcode" />
+		<h2 style="margin-bottom: 15px;">3. Configure Transcode</h2>
 
 		<div style="background-color: #3d3d3d; padding: 15px; border-radius: 8px; text-align: left; font-size: 0.95rem;">
 			<div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
