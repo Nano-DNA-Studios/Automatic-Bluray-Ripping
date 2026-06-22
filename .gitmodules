@@ -1,3 +1,6 @@
 [submodule "Submodules/ProcessRunner"]
 	path = Submodules/ProcessRunner
 	url = git@github.com:Nano-DNA-Studios/ProcessRunner.git
+[submodule "Submodules/AutomationResults"]
+	path = Submodules/AutomationResults
+	url = git@github.com:Nano-DNA-Studios/AutomationResults.git
