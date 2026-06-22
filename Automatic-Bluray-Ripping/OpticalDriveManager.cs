@@ -183,6 +183,7 @@ namespace Automatic_Bluray_Ripping
             {
                 drive.Progress = 1;
                 drive.GlobalProgress = 1;
+                await EjectDisc(drive);
                 RaiseProgressUpdate();
             }
 
@@ -193,16 +194,12 @@ namespace Automatic_Bluray_Ripping
         {
             ProcessRunner process = new ProcessRunner("eject");
 
-            Result<int> result = process.Run(opticalDrive.DrivePath);
+            Result<int> result = await process.RunAsync(opticalDrive.DrivePath);
 
             if (result.IsSuccess)
                 Console.WriteLine($"Successfully Ejected Drive {opticalDrive.DriveName} ({opticalDrive.DrivePath})");
             else
                 Console.WriteLine($"Failed to Eject Drive {opticalDrive.DriveName} ({opticalDrive.DrivePath})");
-
         }
-
-
-
     }
 }
