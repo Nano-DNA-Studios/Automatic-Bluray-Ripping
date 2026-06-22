@@ -23,15 +23,18 @@ namespace Automatic_Bluray_Ripping
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            builder.WebHost.ConfigureKestrel(options =>
-            {
-                options.ListenAnyIP(HTTPPort); // HTTP
-                //options.ListenAnyIP(HTTPSPort, listenOptions =>
-                //{
-                //    listenOptions.UseHttps(certPath, certPassword);
-                //});
-            });
 
+            if (!OperatingSystem.IsWindows())
+            {
+                builder.WebHost.ConfigureKestrel(options =>
+                {
+                    options.ListenAnyIP(HTTPPort); // HTTP
+                    //options.ListenAnyIP(HTTPSPort, listenOptions =>
+                    //{
+                    //    listenOptions.UseHttps(certPath, certPassword);
+                    //});
+                });
+            }
             // Add services to the container.
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
@@ -39,7 +42,7 @@ namespace Automatic_Bluray_Ripping
             builder.Services.AddScoped<DefaultSettings>();
 
             DefaultSettings settings = new DefaultSettings();
-            
+
             TranscodeQueueService transcodeQueue = new TranscodeQueueService();
             ThumbnailQueue thumbnailQueue = new ThumbnailQueue();
             ThumbnailManager thumbnailManager = new ThumbnailManager(thumbnailQueue);
@@ -50,7 +53,7 @@ namespace Automatic_Bluray_Ripping
             MakeMKVManager mkvManager = new MakeMKVManager(driveManager, settings);
             MediaScannerManager mediaScannerManager = new MediaScannerManager(mkvManager, thumbnailQueue, subtitleQueue, transcodeQueue, settings);
             TranscodeManager transcodeManager = new TranscodeManager(transcodeQueue);
-            
+
             builder.Services.AddSingleton<DefaultSettings>(settings);
             builder.Services.AddSingleton<TranscodeQueueService>(transcodeQueue);
             builder.Services.AddSingleton<OpticalDriveManager>(driveManager);
