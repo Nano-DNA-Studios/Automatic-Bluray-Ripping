@@ -1,32 +1,34 @@
-﻿@page "/bluray"
+﻿@page "/ripping"
 @rendermode InteractiveServer
 @inject OpticalDriveManager DriveManager
 
-<h3>Optical Drives</h3>
+<PageTitle>Ripping</PageTitle>
 
-@if (DriveManager.IsScanning)
-{
-	<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px;">
-		<div class="spinner"></div>
-		<p style="margin-top: 15px; font-weight: 500; color: #555;">Scanning hardware...</p>
-	</div>
-}
+<div style="display: flex; flex-direction: column; justify-content: flex-start; gap:10px;">
 
-@if (DriveManager.HasScanned)
-{
-	@if (!DriveManager.IsLocked)
+	<h3>Optical Drives</h3>
+
+	@if (DriveManager.IsScanning)
 	{
-		<div style="font-size:x-large">
-			<button @onclick="@ScanDrives">
-				Scan Drives
-			</button>
-			<button @onclick="@StartRips">
-				Rip Drives
-			</button>
+		<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px;">
+			<div class="spinner"></div>
+			<p style="margin-top: 15px; font-weight: 500; color: #555;">Scanning hardware...</p>
 		</div>
 	}
 
-	<div style="margin-top: 10px">
+	@if (DriveManager.HasScanned)
+	{
+		@if (!DriveManager.IsLocked)
+		{
+			<div style="font-size:x-large">
+				<button @onclick="@ScanDrives">
+					Scan Drives
+				</button>
+				<button @onclick="@StartRips">
+					Rip Drives
+				</button>
+			</div>
+		}
 
 		@foreach (OpticalDrive drive in DriveManager.OpticalDrives)
 		{
@@ -35,6 +37,12 @@
 					(@drive.ID) -
 					<input @bind="@drive.DiscName" />
 					(@drive.DriveName)
+					<button @onclick="() => StartRip(drive)">
+						Rip Disc
+					</button>
+					<button @onclick="() => EjectDisc(drive)">
+						Eject Disc
+					</button>
 				</span>
 
 				<div style="display: flex; flex-direction: row; align-items: center; justify-content: center; width:100%; font-size: large; gap: 10px">
@@ -48,8 +56,8 @@
 				</div>
 			</div>
 		}
-	</div>
-}
+	}
+</div>
 
 @code {
 
@@ -66,6 +74,18 @@
 	private async Task StartRips()
 	{
 		await DriveManager.RipOpticalDiscs();
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private async Task StartRip(OpticalDrive drive)
+	{
+		await DriveManager.RipOpticalDisc(DriveManager.TokenSrc.Token, drive);
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private async Task EjectDisc(OpticalDrive drive)
+	{
+		await DriveManager.EjectDisc(drive);
 		await InvokeAsync(StateHasChanged);
 	}
 
