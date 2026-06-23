@@ -54,4 +54,3 @@ TestResult.xml
 nunit-*.xml
 /.vs
 .env
-transfer.sh
