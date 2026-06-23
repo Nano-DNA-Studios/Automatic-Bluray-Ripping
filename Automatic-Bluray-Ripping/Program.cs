@@ -95,18 +95,6 @@ namespace Automatic_Bluray_Ripping
             app.MapRazorComponents<App>()
                 .AddInteractiveServerRenderMode();
 
-            try
-            {
-                await driveManager.ReadOpticalDrives();
-                await mkvManager.ScanForBackups();
-                mediaScannerManager.LoadHandbrakePresets();
-                mediaScannerManager.LoadMKVBackups();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Something went wrong lmao {ex.Message}");
-            }
-
             app.Run();
         }
     }

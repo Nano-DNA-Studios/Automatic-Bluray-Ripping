@@ -89,6 +89,8 @@ namespace Automatic_Bluray_Ripping
             HasScanned = false;
             IsScanning = true;
 
+            RaiseProgressUpdate();
+
             Console.WriteLine("Scanning Optical drives");
 
             ProcessRunner process = new ProcessRunner("makemkvcon");
@@ -128,7 +130,7 @@ namespace Automatic_Bluray_Ripping
             };
 
             //Convert to Async with Cancellation token
-            Result<int> result = (await process.RunAsync(args));
+            Result<int> result = await process.RunAsync(args);
 
             Console.WriteLine("Finished Scanning Optical Drives");
 

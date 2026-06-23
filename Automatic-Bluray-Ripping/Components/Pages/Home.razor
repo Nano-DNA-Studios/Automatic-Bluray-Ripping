@@ -242,6 +242,25 @@
 		ThumbQueue.OnProgressUpdated += RefreshDashboard;
 	}
 
+	protected override async Task OnInitializedAsync()
+	{
+		try
+		{
+			if (!DriveManager.HasScanned)
+				await DriveManager.ReadOpticalDrives();
+
+			if (MKVManager.DiscBackups.Count == 0)
+				await MKVManager.ScanForBackups();
+
+			ScannerManager.LoadHandbrakePresets();
+			ScannerManager.LoadMKVBackups();
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Something went wrong lmao {ex.Message}");
+		}
+	}  
+
 	private void RefreshProgress(double progress)
 	{
 		InvokeAsync(StateHasChanged);

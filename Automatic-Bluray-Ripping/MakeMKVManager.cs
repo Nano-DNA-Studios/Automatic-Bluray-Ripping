@@ -124,6 +124,7 @@ namespace Automatic_Bluray_Ripping
         public async Task ScanForBackups()
         {
             IsScanning = true;
+            RaiseProgressUpdate();
 
             DiscBackups = DiscBackups.Where((d) => d.IsConverting).ToList();
 
@@ -154,7 +155,6 @@ namespace Automatic_Bluray_Ripping
                 await ExtractBackupInfo(backup, TokenSrc.Token);
 
             IsScanning = false;
-
             RaiseProgressUpdate();
         }
 
