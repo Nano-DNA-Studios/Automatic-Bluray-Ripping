@@ -1,5 +1,5 @@
-﻿using NanoDNA.ProcessRunner;
-using NanoDNA.ProcessRunner.Results;
+﻿using NanoDNA.AutomationResults;
+using NanoDNA.ProcessRunner;
 using System.Text.RegularExpressions;
 
 namespace Automatic_Bluray_Ripping
@@ -79,7 +79,7 @@ namespace Automatic_Bluray_Ripping
                 }
             };
 
-            ProcessResult result = (await process.RunAsync(job.GetFullArgument())).Content;
+            Result<int> result = (await process.RunAsync(job.GetFullArgument()));
 
             _queueService.UpdateProgress(100);
         }

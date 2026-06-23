@@ -1,10 +1,19 @@
-﻿using NanoDNA.ProcessRunner;
-using NanoDNA.ProcessRunner.Enums;
-using NanoDNA.ProcessRunner.Results;
+﻿using NanoDNA.AutomationResults;
+using NanoDNA.ProcessRunner;
 using System.Text.RegularExpressions;
 
 namespace Automatic_Bluray_Ripping
 {
+    public enum OpticalDriveState
+    {
+        Idle,
+        Scanning,
+        Ripping,
+        Canceled,
+        Complete,
+        Error
+    }
+
     public class OpticalDrive
     {
         public int ID { get; set; }
@@ -13,20 +22,39 @@ namespace Automatic_Bluray_Ripping
 
         public string DiscName { get; set; }
 
+        public string DrivePath { get; set; }
+
         public double Progress { get; set; }
 
         public double GlobalProgress { get; set; }
 
         public bool IsBusy { get; set; }
 
-        public OpticalDrive(int id, string driveName, string discName)
+        public OpticalDriveState State { get; set; }
+
+        public CancellationTokenSource TokenSrc { get; }
+
+        public OpticalDrive(int id, string driveName, string discName, string drivePath)
         {
             ID = id;
             DriveName = driveName;
             DiscName = discName;
+            DrivePath = drivePath;
 
+            State = OpticalDriveState.Idle;
             Progress = 0;
             GlobalProgress = 0;
+            TokenSrc = new CancellationTokenSource();
+        }
+
+        public bool IsEmpty()
+        {
+            return string.IsNullOrEmpty(DriveName);
+        }
+
+        public string GetState()
+        {
+            return State.ToString();
         }
     }
 
@@ -35,23 +63,20 @@ namespace Automatic_Bluray_Ripping
         public OpticalDrive[] OpticalDrives { get; set; }
 
         public bool HasScanned { get; set; }
-        public bool IsScanning { get; set; } 
+        public bool IsScanning { get; set; }
 
         public bool IsLocked { get; set; }
-
-        public CancellationTokenSource TokenSrc { get; }
 
         public event Action? OnProgressUpdated;
 
         private DefaultSettings _settings { get; }
 
-        public OpticalDriveManager (DefaultSettings settings)
+        public OpticalDriveManager(DefaultSettings settings)
         {
             _settings = settings;
 
             OpticalDrives = new OpticalDrive[0];
-            TokenSrc = new CancellationTokenSource ();
-            
+
             HasScanned = false;
             IsScanning = false;
             IsLocked = false;
@@ -64,11 +89,13 @@ namespace Automatic_Bluray_Ripping
             HasScanned = false;
             IsScanning = true;
 
+            RaiseProgressUpdate();
+
             Console.WriteLine("Scanning Optical drives");
 
             ProcessRunner process = new ProcessRunner("makemkvcon");
             string args = "-r --cache=1 info disc:9999";
-            
+
             process.STDOutputReceived += (sender, args) =>
             {
                 if (string.IsNullOrEmpty(args.Data))
@@ -76,7 +103,7 @@ namespace Automatic_Bluray_Ripping
 
                 Console.WriteLine(args.Data);
 
-                string pattern = @"^DRV:(?<index>\d+),(?<visible>\d+),(?<id>\d+),(?<type>\d+),""(?<name>[^""]*)"",""(?<discname>[^""]*)"",""(?<path>[^""]*)""";
+                string pattern = @"^DRV:(?<index>\d+),(?<visible>\d+),(?<id>\d+),(?<type>\d+),""(?<name>[^""]*)"",""(?<discname>[^""]*)"",""(?<drivepath>[^""]*)""";
 
                 Match match = Regex.Match(args.Data, pattern);
 
@@ -86,11 +113,12 @@ namespace Automatic_Bluray_Ripping
                 int driveID = int.Parse(match.Groups["index"].Value);
                 string driveName = match.Groups["name"].Value;
                 string blurayName = match.Groups["discname"].Value;
+                string drivePath = match.Groups["drivepath"].Value;
 
                 if (string.IsNullOrEmpty(driveName))
                     return;
 
-                drives.Add(new OpticalDrive(driveID, driveName, blurayName));
+                drives.Add(new OpticalDrive(driveID, driveName, blurayName, drivePath));
             };
 
             process.STDErrorReceived += (sender, args) =>
@@ -102,11 +130,11 @@ namespace Automatic_Bluray_Ripping
             };
 
             //Convert to Async with Cancellation token
-            ProcessResult result = (await process.RunAsync(args)).Content;
+            Result<int> result = await process.RunAsync(args);
 
             Console.WriteLine("Finished Scanning Optical Drives");
 
-            if (result.Status == ProcessStatus.Success)
+            if (result.IsSuccess)
                 this.OpticalDrives = drives.ToArray();
 
             IsScanning = false;
@@ -123,7 +151,7 @@ namespace Automatic_Bluray_Ripping
 
             foreach (OpticalDrive drive in OpticalDrives)
             {
-                Task ripTask = RipOpticalDisc(TokenSrc.Token, drive);
+                Task ripTask = RipOpticalDisc(drive);
                 ripTasks.Add(ripTask);
             }
 
@@ -141,12 +169,14 @@ namespace Automatic_Bluray_Ripping
 
         public bool IsBusy(string name)
         {
-           return OpticalDrives.Any(drive => drive.DiscName == name && drive.IsBusy);
+            return OpticalDrives.Any(drive => drive.DiscName == name && drive.IsBusy);
         }
 
-        public async Task RipOpticalDisc(CancellationToken cancellationToken, OpticalDrive drive)
+        public async Task RipOpticalDisc(OpticalDrive drive)
         {
             drive.IsBusy = true;
+
+            drive.State = OpticalDriveState.Ripping;
 
             ProcessRunner process = new ProcessRunner("makemkvcon");
 
@@ -173,17 +203,56 @@ namespace Automatic_Bluray_Ripping
                 RaiseProgressUpdate();
             };
 
-            //Add the cancellation token here
-            ProcessResult result = (await process.RunAsync(args)).Content;
+            Result<int> result = (await process.RunAsync(args, drive.TokenSrc.Token));
 
-            if (result.Status == ProcessStatus.Success)
+            if (result.IsSuccess)
             {
                 drive.Progress = 1;
                 drive.GlobalProgress = 1;
+                drive.State = OpticalDriveState.Complete;
+                await EjectDisc(drive);
                 RaiseProgressUpdate();
             }
 
+            if (result.IsCancelled)
+            {
+                drive.Progress = 0;
+                drive.GlobalProgress = 0;
+                drive.State = OpticalDriveState.Canceled;
+                RaiseProgressUpdate();
+            }
+
+            if (result.IsError)
+            {
+                drive.Progress = 0;
+                drive.GlobalProgress = 0;
+                drive.State = OpticalDriveState.Error;
+                RaiseProgressUpdate();
+            }
+
+            Console.WriteLine($"Completed State is : {result.Status.ToString()}");
+            Console.WriteLine($"Completed State is : {result.Message}");
+
             drive.IsBusy = false;
+        }
+
+        public async Task CancelRip(OpticalDrive drive)
+        {
+            await drive.TokenSrc.CancelAsync();
+
+            Directory.Delete(Path.Combine(_settings.DefaultRipDirectory, drive.DiscName), true);
+        }
+
+        public async Task EjectDisc(OpticalDrive opticalDrive)
+        {
+            ProcessRunner process = new ProcessRunner("eject");
+
+            Result<int> result = await process.RunAsync(opticalDrive.DrivePath);
+
+            if (result.IsSuccess)
+                Console.WriteLine($"Successfully Ejected Drive {opticalDrive.DriveName} ({opticalDrive.DrivePath})");
+            else
+                Console.WriteLine($"Failed to Eject Drive {opticalDrive.DriveName} ({opticalDrive.DrivePath})");
         }
     }
 }

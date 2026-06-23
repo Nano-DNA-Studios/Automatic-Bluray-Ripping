@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     curl \
     ffmpeg \
+    eject \
     handbrake-cli \
     && mkdir -p /tmp/makemkv \
     && cd /tmp/makemkv \

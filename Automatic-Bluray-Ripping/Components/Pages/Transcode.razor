@@ -29,16 +29,16 @@
 		</div>
 	}
 
-	<video controls width="100%" style="max-width: 800px;">
+	@* <video controls width="100%" style="max-width: 800px;">
 		<source src="@VideoURL" type="video/x-matroska" />
-		@* <track src="@LocalSubtitleUrl" kind="subtitles" srclang="en" label="English" default /> *@
+		 <track src="@LocalSubtitleUrl" kind="subtitles" srclang="en" label="English" default /> 
 		Your browser does not support the video tag or container format.
-	</video>
+	</video> *@
 </div>
 
 @code {
 
-	private string VideoURL = "/transcodes/DANDADAN_S1_D1/test.mkv";
+	//private string VideoURL = "/transcodes/DANDADAN_S1_D1/test.mkv";
 
 	private double CurrentProgressPercent = 0;
 

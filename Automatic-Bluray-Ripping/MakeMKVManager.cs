@@ -1,6 +1,5 @@
-﻿using NanoDNA.ProcessRunner;
-using NanoDNA.ProcessRunner.Enums;
-using NanoDNA.ProcessRunner.Results;
+﻿using NanoDNA.AutomationResults;
+using NanoDNA.ProcessRunner;
 using System.Text.RegularExpressions;
 
 namespace Automatic_Bluray_Ripping
@@ -125,6 +124,7 @@ namespace Automatic_Bluray_Ripping
         public async Task ScanForBackups()
         {
             IsScanning = true;
+            RaiseProgressUpdate();
 
             DiscBackups = DiscBackups.Where((d) => d.IsConverting).ToList();
 
@@ -155,7 +155,6 @@ namespace Automatic_Bluray_Ripping
                 await ExtractBackupInfo(backup, TokenSrc.Token);
 
             IsScanning = false;
-
             RaiseProgressUpdate();
         }
 
@@ -247,9 +246,9 @@ namespace Automatic_Bluray_Ripping
                 matches = new List<string>();
             };
 
-            ProcessResult result = (await process.RunAsync(args)).Content;
+            Result<int> result = (await process.RunAsync(args));
 
-            if (result.Status == ProcessStatus.Success)
+            if (result.IsSuccess)
                 backup.Files = files.ToArray();
 
             backup.IsScanning = false;

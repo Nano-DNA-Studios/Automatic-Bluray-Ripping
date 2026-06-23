@@ -1,6 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
+	<!-- Project Reference Conditionals -->
+	<PropertyGroup>
+		<ProcessRunnerProjectExists Condition="Exists('$(MSBuildThisFileDirectory)..\..\ProcessRunner\ProcessRunner\ProcessRunner.csproj')">true</ProcessRunnerProjectExists>
+		<ProcessRunnerProjectExists Condition="'$(ProcessRunnerProjectExists)' == ''">false</ProcessRunnerProjectExists>
+		<UseProjectReference Condition="'$(Configuration)' == 'Debug' and '$(ProcessRunnerProjectExists)' == 'true'">true</UseProjectReference>
+		<UseProjectReference Condition="'$(Configuration)' == 'Release' or '$(UseProjectReference)' == ''">false</UseProjectReference>
+	</PropertyGroup>
+
+
+	<PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -10,17 +19,34 @@
 
   <ItemGroup>
     <PackageReference Include="MediaInfo.Wrapper.Core" Version="26.1.0" />
-    <PackageReference Include="NanoDNA.ProcessRunner" Version="0.3.0" />
+    <PackageReference Include="NanoDNA.ProcessRunner" Version="0.3.1" Condition="'$(UseProjectReference)' == 'false'" />
   </ItemGroup>
 
+	<!-- Development Project References -->
+	<ItemGroup Condition="'$(UseProjectReference)' == 'true'">
+		<ProjectReference Include="..\..\ProcessRunner\ProcessRunner\ProcessRunner.csproj" />
+	</ItemGroup>
+
   <ItemGroup>
+    <Content Update="wwwroot\configure.svg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\disc-fill.svg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Update="wwwroot\file-video.svg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\film.svg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Update="wwwroot\hdd.svg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Update="wwwroot\OpticalDriveIcon.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\settings.svg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
