@@ -2,10 +2,10 @@
 
 	<!-- Project Reference Conditionals -->
 	<PropertyGroup>
-		<ProcessRunnerProjectExists Condition="Exists('$(MSBuildThisFileDirectory)..\Submodules\ProcessRunner\ProcessRunner\ProcessRunner.csproj')">true</ProcessRunnerProjectExists>
+		<ProcessRunnerProjectExists Condition="Exists('$(MSBuildThisFileDirectory)..\..\ProcessRunner\ProcessRunner\ProcessRunner.csproj')">true</ProcessRunnerProjectExists>
 		<ProcessRunnerProjectExists Condition="'$(ProcessRunnerProjectExists)' == ''">false</ProcessRunnerProjectExists>
 		<UseProjectReference Condition="'$(Configuration)' == 'Debug' and '$(ProcessRunnerProjectExists)' == 'true'">true</UseProjectReference>
-		<UseProjectReference Condition="'$(Configuration)' == 'Release'">false</UseProjectReference>
+		<UseProjectReference Condition="'$(Configuration)' == 'Release' or '$(UseProjectReference)' == ''">false</UseProjectReference>
 	</PropertyGroup>
 
 
@@ -24,7 +24,7 @@
 
 	<!-- Development Project References -->
 	<ItemGroup Condition="'$(UseProjectReference)' == 'true'">
-		<ProjectReference Include="..\Submodules\ProcessRunner\ProcessRunner\ProcessRunner.csproj" />
+		<ProjectReference Include="..\..\ProcessRunner\ProcessRunner\ProcessRunner.csproj" />
 	</ItemGroup>
 
   <ItemGroup>
