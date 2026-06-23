@@ -4,6 +4,15 @@ using System.Text.RegularExpressions;
 
 namespace Automatic_Bluray_Ripping
 {
+    public enum OpticalDriveState
+    {
+        Idle,
+        Scanning,
+        Ripping,
+        Canceled,
+        Complete
+    }
+
     public class OpticalDrive
     {
         public int ID { get; set; }
@@ -20,6 +29,8 @@ namespace Automatic_Bluray_Ripping
 
         public bool IsBusy { get; set; }
 
+        public CancellationTokenSource TokenSrc { get; }
+
         public OpticalDrive(int id, string driveName, string discName, string drivePath)
         {
             ID = id;
@@ -29,6 +40,12 @@ namespace Automatic_Bluray_Ripping
 
             Progress = 0;
             GlobalProgress = 0;
+            TokenSrc = new CancellationTokenSource();
+        }
+
+        public bool IsEmpty()
+        {
+            return string.IsNullOrEmpty(DriveName);
         }
     }
 
@@ -41,8 +58,6 @@ namespace Automatic_Bluray_Ripping
 
         public bool IsLocked { get; set; }
 
-        public CancellationTokenSource TokenSrc { get; }
-
         public event Action? OnProgressUpdated;
 
         private DefaultSettings _settings { get; }
@@ -52,7 +67,6 @@ namespace Automatic_Bluray_Ripping
             _settings = settings;
 
             OpticalDrives = new OpticalDrive[0];
-            TokenSrc = new CancellationTokenSource();
 
             HasScanned = false;
             IsScanning = false;
@@ -126,7 +140,7 @@ namespace Automatic_Bluray_Ripping
 
             foreach (OpticalDrive drive in OpticalDrives)
             {
-                Task ripTask = RipOpticalDisc(TokenSrc.Token, drive);
+                Task ripTask = RipOpticalDisc(drive);
                 ripTasks.Add(ripTask);
             }
 
@@ -147,7 +161,7 @@ namespace Automatic_Bluray_Ripping
             return OpticalDrives.Any(drive => drive.DiscName == name && drive.IsBusy);
         }
 
-        public async Task RipOpticalDisc(CancellationToken cancellationToken, OpticalDrive drive)
+        public async Task RipOpticalDisc(OpticalDrive drive)
         {
             drive.IsBusy = true;
 
@@ -176,8 +190,7 @@ namespace Automatic_Bluray_Ripping
                 RaiseProgressUpdate();
             };
 
-            //Add the cancellation token here
-            Result<int> result = (await process.RunAsync(args));
+            Result<int> result = (await process.RunAsync(args, drive.TokenSrc.Token));
 
             if (result.IsSuccess)
             {
@@ -188,6 +201,13 @@ namespace Automatic_Bluray_Ripping
             }
 
             drive.IsBusy = false;
+        }
+
+        public async Task CancelRip(OpticalDrive drive)
+        {
+            await drive.TokenSrc.CancelAsync();
+
+            Directory.Delete(Path.Combine(_settings.DefaultRipDirectory, drive.DiscName), true);
         }
 
         public async Task EjectDisc(OpticalDrive opticalDrive)
