@@ -10,7 +10,8 @@ namespace Automatic_Bluray_Ripping
         Scanning,
         Ripping,
         Canceled,
-        Complete
+        Complete,
+        Error
     }
 
     public class OpticalDrive
@@ -29,6 +30,8 @@ namespace Automatic_Bluray_Ripping
 
         public bool IsBusy { get; set; }
 
+        public OpticalDriveState State { get; set; }
+
         public CancellationTokenSource TokenSrc { get; }
 
         public OpticalDrive(int id, string driveName, string discName, string drivePath)
@@ -38,6 +41,7 @@ namespace Automatic_Bluray_Ripping
             DiscName = discName;
             DrivePath = drivePath;
 
+            State = OpticalDriveState.Idle;
             Progress = 0;
             GlobalProgress = 0;
             TokenSrc = new CancellationTokenSource();
@@ -46,6 +50,11 @@ namespace Automatic_Bluray_Ripping
         public bool IsEmpty()
         {
             return string.IsNullOrEmpty(DriveName);
+        }
+
+        public string GetState()
+        {
+            return State.ToString();
         }
     }
 
@@ -165,6 +174,8 @@ namespace Automatic_Bluray_Ripping
         {
             drive.IsBusy = true;
 
+            drive.State = OpticalDriveState.Ripping;
+
             ProcessRunner process = new ProcessRunner("makemkvcon");
 
             string args = $"backup --decrypt --cache=1024 --noscan -r --progress=-same --minlength={_settings.MinVideoLength} disc:{drive.ID} \"{Path.Combine(_settings.DefaultRipDirectory, drive.DiscName)}\"";
@@ -196,9 +207,29 @@ namespace Automatic_Bluray_Ripping
             {
                 drive.Progress = 1;
                 drive.GlobalProgress = 1;
+                drive.State = OpticalDriveState.Complete;
                 await EjectDisc(drive);
                 RaiseProgressUpdate();
             }
+
+            if (result.IsCancelled)
+            {
+                drive.Progress = 0;
+                drive.GlobalProgress = 0;
+                drive.State = OpticalDriveState.Canceled;
+                RaiseProgressUpdate();
+            }
+
+            if (result.IsError)
+            {
+                drive.Progress = 0;
+                drive.GlobalProgress = 0;
+                drive.State = OpticalDriveState.Error;
+                RaiseProgressUpdate();
+            }
+
+            Console.WriteLine($"Completed State is : {result.Status.ToString()}");
+            Console.WriteLine($"Completed State is : {result.Message}");
 
             drive.IsBusy = false;
         }

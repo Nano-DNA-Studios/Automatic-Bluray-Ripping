@@ -1,0 +1,176 @@
+﻿@page "/ripping"
+@rendermode InteractiveServer
+@inject OpticalDriveManager DriveManager
+
+<PageTitle>Ripping</PageTitle>
+
+<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #070913; color: #ffffff; min-height: 100vh; padding: 24px; box-sizing: border-box;">
+
+	<div style="background-color: #0f1322; border: 1px solid #1a2035; border-radius: 8px; padding: 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+		<div>
+			<div style="display: flex; align-items: center; gap: 10px;">
+				<span style="color: #6366f1; font-size: 1.2rem; display: flex; align-items: center;">
+					&#9673;
+				</span>
+				<h2 style="margin: 0; font-size: 1.25rem; font-weight: 600; letter-spacing: 0.5px;">Optical Drive Management</h2>
+			</div>
+			<p style="margin: 6px 0 0 0; color: #626c8b; font-size: 0.85rem;">Configure physical Blu-ray / DVD laser drives and raw volume labels</p>
+		</div>
+
+		<div style="display: flex; gap: 12px;">
+			<button @onclick="@ScanDrives" disabled="@DriveManager.IsScanning"
+					style="background-color: transparent; color: #ffffff; border: 1px solid #3b4257; border-radius: 6px; padding: 10px 20px; font-weight: 500; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s;">
+				<span>&#8635;</span> SCAN DRIVES
+			</button>
+			<button @onclick="@StartRips" disabled="@(DriveManager.IsLocked || !DriveManager.OpticalDrives.Any())"
+					style="background-color: #4f46e5; color: #ffffff; border: none; border-radius: 6px; padding: 10px 20px; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s;">
+				<span>&#9654;</span> RIP ALL DRIVES
+			</button>
+		</div>
+	</div>
+
+	@if (DriveManager.IsScanning)
+	{
+		<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px; background-color: #0f1322; border: 1px solid #1a2035; border-radius: 8px;">
+			<div style="border: 3px solid rgba(255,255,255,0.1); border-radius: 50%; border-top: 3px solid #4f46e5; width: 40px; height: 40px; animation: spin 1s linear infinite;"></div>
+			<p style="margin-top: 16px; font-weight: 500; color: #626c8b; font-size: 0.95rem;">Scanning hardware...</p>
+		</div>
+	}
+
+	@if (DriveManager.HasScanned && !DriveManager.IsScanning)
+	{
+		<div style="display: flex; flex-direction: column; gap: 20px;">
+			@foreach (var drive in DriveManager.OpticalDrives)
+			{
+				<div style="background-color: #0f1322; border: 1px solid #1a2035; border-radius: 8px; padding: 24px; display: flex; flex-direction: column; gap: 20px;">
+
+					<div style="display: flex; justify-content: space-between; align-items: center;">
+						<div style="display: flex; align-items: center; gap: 14px;">
+							<div style="background-color: #161b30; border: 1px solid #252d4a; padding: 10px; border-radius: 6px; color: #a3aed0; display: flex; align-items: center; justify-content: center;">
+								<image src="hdd.svg"></image>
+							</div>
+							<div>
+								<div style="font-family: monospace; font-size: 0.85rem; color: #4365ff; font-weight: 600; margin-bottom: 2px;">
+									(@drive.ID) - DRIVE PORT @drive.DrivePath
+								</div>
+								<div style="font-size: 0.95rem; font-weight: 600; color: #e2e8f0; font-family: monospace;">
+									@drive.DriveName
+								</div>
+							</div>
+						</div>
+
+						<div style="display: flex; gap: 10px;">
+							@if (drive.IsBusy)
+							{
+								<button @onclick="() => CancelDisc(drive)"
+										style="background-color: #dc2626; color: #ffffff; border: none; border-radius: 6px; padding: 8px 18px; font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+									Cancel
+								</button>
+							}
+							else
+							{
+								<button @onclick="() => EjectDisc(drive)"
+										style="background-color: transparent; color: #ffb020; border: 1px solid #ffb020; border-radius: 6px; padding: 8px 18px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+									<image src="disc-fill.svg"></image> Eject Disc
+								</button>
+								<button @onclick="() => StartRip(drive)"
+										style="background-color: #4f46e5; color: #ffffff; border: none; border-radius: 6px; padding: 8px 18px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+									<span>&#9654;</span> Rip Disc
+								</button>
+							}
+						</div>
+					</div>
+
+					<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; align-items: end;">
+						<div style="display: flex; flex-direction: column; gap: 6px;">
+							<label style="color: #626c8b; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px;">TARGET OUTPUT BACKUP FOLDER LABEL</label>
+							@if (drive.IsEmpty())
+							{
+								<input type="text" value="No Drive Available" disabled
+									   style="background-color: #070913; border: 1px solid #1a2035; color: #4a526a; border-radius: 6px; padding: 12px; font-family: monospace; font-size: 0.9rem; width: 100%; box-sizing: border-box; height: 45px;" />
+							}
+							else
+							{
+								<input @bind="@drive.DiscName"
+									   style="background-color: #070913; border: 1px solid #222b45; color: #ffffff; border-radius: 6px; padding: 12px; font-family: monospace; font-size: 0.9rem; width: 100%; box-sizing: border-box; outline: none; height: 45px;" />
+							}
+						</div>
+
+						<div style="background-color: #070913; border: 1px solid #1a2035; border-radius: 6px; padding: 0 12px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; height: 45px;">
+							<div style="font-size: 0.85rem; font-family: monospace;">
+								<span style="color: #4a526a;">Volume Name:</span> <span style="color: #ffffff; font-weight: 600; margin-left: 4px;">@(drive.IsEmpty() ? "UNKNOWN_BLURAY_DISC" : drive.DiscName))</span>
+							</div>
+							<div style="font-size: 0.85rem; font-family: monospace;">
+								<span style="color: #4a526a;">Status:</span> <span style="color: #a3aed0; font-weight: 600; margin-left: 4px;">@(drive.GetState())</span>
+							</div>
+						</div>
+					</div>
+
+					<div style="display: flex; flex-direction: column; gap: 14px; background-color: #0a0d1a; padding: 16px; border-radius: 6px; border: 1px solid #141a30; width: 100%; box-sizing: border-box; margin-top: 20px;">
+						<div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
+							<div style="display: flex; justify-content: space-between; color: #626c8b; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px;">
+								<span>FILE PROGRESS</span>
+								<span>@((drive.Progress * 100).ToString("0"))%</span>
+							</div>
+							<progress value="@drive.Progress" max="1" style="width: 100%;" />
+						</div>
+
+						<div style="display: flex; flex-direction: column; gap: 6px; width: 100%;">
+							<div style="display: flex; justify-content: space-between; color: #626c8b; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px;">
+								<span>ALL FILES PROGRESS</span>
+								<span>@((drive.GlobalProgress * 100).ToString("0"))%</span>
+							</div>
+							<progress value="@drive.GlobalProgress" max="1" style="width: 100%;" />
+						</div>
+					</div>
+
+				</div>
+			}
+		</div>
+	}
+</div>
+
+@code {
+	protected override void OnInitialized()
+	{
+		DriveManager.OnProgressUpdated += UpdateProgress;
+	}
+
+	private async Task ScanDrives()
+	{
+		await DriveManager.ReadOpticalDrives();
+	}
+
+	private async Task StartRips()
+	{
+		await DriveManager.RipOpticalDiscs();
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private async Task StartRip(OpticalDrive drive)
+	{
+		await DriveManager.RipOpticalDisc(drive);
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private async Task EjectDisc(OpticalDrive drive)
+	{
+		await DriveManager.EjectDisc(drive);
+		await InvokeAsync(StateHasChanged);
+	}
+
+	private async Task CancelDisc(OpticalDrive drive)
+	{
+		await DriveManager.CancelRip(drive);
+	}
+
+	private void UpdateProgress()
+	{
+		InvokeAsync(StateHasChanged);
+	}
+
+	public void Dispose()
+	{
+		DriveManager.OnProgressUpdated -= UpdateProgress;
+	}
+}
