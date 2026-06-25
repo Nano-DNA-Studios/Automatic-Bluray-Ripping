@@ -1,6 +1,7 @@
 using Automatic_Bluray_Ripping.Components;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
+using System.Threading.Tasks;
 
 namespace Automatic_Bluray_Ripping
 {
@@ -65,6 +66,17 @@ namespace Automatic_Bluray_Ripping
             builder.Services.AddHostedService<TranscodeManager>(provider => transcodeManager);
             builder.Services.AddHostedService<ThumbnailManager>(provider => thumbnailManager);
             builder.Services.AddHostedService<SubtitleManager>(provider => subtitleManager);
+
+            _ = Task.Run(() =>
+            {
+                Task opticalDisc = driveManager.ReadOpticalDrives();
+                Task scanBackups = mkvManager.ScanForBackups();
+
+                mediaScannerManager.LoadHandbrakePresets();
+                mediaScannerManager.LoadMKVBackups();
+
+                Task.WhenAll(opticalDisc, scanBackups);
+            });
 
             var app = builder.Build();
 
