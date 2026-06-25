@@ -24,7 +24,7 @@ namespace Automatic_Bluray_Ripping
             VideoCategories = new Dictionary<string, VideoCategoryMetadata>();
         }
 
-        public int GetTotalVideos ()
+        public int GetTotalVideos()
         {
             int total = 0;
 
@@ -114,7 +114,7 @@ namespace Automatic_Bluray_Ripping
                 Backups.AddRange(UnremovedBackups);
                 UnremovedBackups.Clear();
             }
-               
+
             foreach (string dir in Directory.GetDirectories(_settings.DefaultMKVDirectory))
             {
                 MKVBackup backup = new MKVBackup(dir);
@@ -131,7 +131,8 @@ namespace Automatic_Bluray_Ripping
             }
 
             IsScanning = false;
-
+            Backups.Sort((a, b) => a.Name.CompareTo(b.Name));
+            
             Update();
         }
 
@@ -163,7 +164,7 @@ namespace Automatic_Bluray_Ripping
             backup.VideoCategories = videoCategories;
         }
 
-        private void ParseMetadata (VideoMetadata metadata)
+        private void ParseMetadata(VideoMetadata metadata)
         {
             if (!File.Exists(metadata.FilePath))
                 return;
@@ -225,7 +226,7 @@ namespace Automatic_Bluray_Ripping
             return args;
         }
 
-        public void AddToTranscodeQueue (MKVBackup backup)
+        public void AddToTranscodeQueue(MKVBackup backup)
         {
             string exportDir = Path.Combine(_settings.DefaultTranscodeDirectory, backup.Name);
 

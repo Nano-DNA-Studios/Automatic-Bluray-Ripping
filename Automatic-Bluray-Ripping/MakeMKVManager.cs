@@ -246,7 +246,7 @@ namespace Automatic_Bluray_Ripping
                 matches = new List<string>();
             };
 
-            Result<int> result = (await process.RunAsync(args));
+            Result<int> result = await process.RunAsync(args, token);
 
             if (result.IsSuccess)
                 backup.Files = files.ToArray();
