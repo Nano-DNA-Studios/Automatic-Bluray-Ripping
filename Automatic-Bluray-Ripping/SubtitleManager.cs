@@ -152,9 +152,37 @@ namespace Automatic_Bluray_Ripping
             else
                 singlePassArgs = $"-probesize 20M -analyzeduration 20M -f lavfi -i color=c=black@0:s={subtitleJob.Metadata.Width}x{subtitleJob.Metadata.Height} -i \"{subtitleJob.Metadata.FilePath}\" -filter_complex \"[0:v][1:s:{subtitleJob.Index}]overlay=shortest=1,mpdecimate\" -vsync vfr -pix_fmt rgba -frames:v {_settings.SubtitleFramesExtracted} -f image2pipe -c:v png pipe:1";
 
+            //ProcessRunner process = new ProcessRunner("ffmpeg");
+
+            //await process.RunAsync(singlePassArgs);
+
+            //byte[] allPngBytes = process.STDOutputBytes;
+
+            //List<byte[]> individualImages = SplitPngStream(allPngBytes);
+
+            //foreach (var imgBytes in individualImages)
+            //    base64Images.Add($"data:image/png;base64,{Convert.ToBase64String(imgBytes)}");
+
+            //subtitleJob.Metadata.SubtitleStreams[subtitleJob.Index].Images = base64Images.ToArray();
+
+            //ProcessRunner process = new ProcessRunner("ffmpeg");
+
+            //await process.RunAsync(singlePassArgs);
+
+            //using (MemoryStream pngStream = (MemoryStream)process.StandardOutputReader.BaseStream)
+            //{
+            //    byte[] allPngBytes = pngStream.ToArray();
+
+            //    List<byte[]> individualImages = SplitPngStream(allPngBytes);
+            //    foreach (var imgBytes in individualImages)
+            //        base64Images.Add($"data:image/png;base64,{Convert.ToBase64String(imgBytes)}");
+            //}
+
+            //subtitleJob.Metadata.SubtitleStreams[subtitleJob.Index].Images = base64Images.ToArray();
+
             ProcessStartInfo pngStartInfo = new ProcessStartInfo
             {
-                FileName = @"C:\FFmpeg\App\bin\ffmpeg.exe",
+                FileName = "ffmpeg",
                 Arguments = singlePassArgs,
                 RedirectStandardOutput = true,
                 RedirectStandardError = false,

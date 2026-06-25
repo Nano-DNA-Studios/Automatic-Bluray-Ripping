@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using NanoDNA.ProcessRunner;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 
 namespace Automatic_Bluray_Ripping
@@ -68,7 +69,7 @@ namespace Automatic_Bluray_Ripping
 
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
-                FileName = @"C:\FFmpeg\App\bin\ffmpeg.exe",
+                FileName = "ffmpeg",
                 Arguments = arguments,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,

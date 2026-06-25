@@ -106,24 +106,39 @@ namespace Automatic_Bluray_Ripping
 
             Backups = new List<MKVBackup>();
 
+            Console.WriteLine("Checking if exists");
+
             if (!Directory.Exists(_settings.DefaultMKVDirectory))
                 return;
 
+            Console.WriteLine("Line does exist");
+
             if (UnremovedBackups.Count > 0)
             {
+                Console.WriteLine("Adding unremoved backups");
                 Backups.AddRange(UnremovedBackups);
                 UnremovedBackups.Clear();
             }
+
+            Console.WriteLine("Going through directories");
 
             foreach (string dir in Directory.GetDirectories(_settings.DefaultMKVDirectory))
             {
                 MKVBackup backup = new MKVBackup(dir);
 
-                if (_mkvManager.DiscBackups.Any((d) => d.Name == backup.Name))
+                if (_mkvManager.DiscBackups.Any((d) => d.Name == backup.Name && d.IsConverting))
+                {
+                    Console.WriteLine("Skipping cause exist?");
                     continue;
+                }
 
                 if (Backups.Any((b) => b.Name == backup.Name))
+                {
+                    Console.WriteLine("Already exists");
                     continue;
+                }
+
+                Console.WriteLine("Computing the category");
 
                 ComputeCategories(backup);
 
@@ -132,7 +147,7 @@ namespace Automatic_Bluray_Ripping
 
             IsScanning = false;
             Backups.Sort((a, b) => a.Name.CompareTo(b.Name));
-            
+
             Update();
         }
 
