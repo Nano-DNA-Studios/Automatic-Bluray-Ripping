@@ -242,37 +242,6 @@
 		ThumbQueue.OnProgressUpdated += RefreshDashboard;
 	}
 
-	protected override async Task OnInitializedAsync()
-	{
-		List<Task> tasks = new List<Task>();
-
-		// try
-		// {
-		// 	if (!DriveManager.HasScanned)
-		// 	{
-		// 		Task opticalDisc = DriveManager.ReadOpticalDrives();
-		// 		tasks.Add(opticalDisc);
-		// 	}
-
-		// 	if (MKVManager.DiscBackups.Count == 0)
-		// 	{
-		// 		Task scanBackups = MKVManager.ScanForBackups();
-		// 		tasks.Add(scanBackups);
-		// 	}
-
-		// 	ScannerManager.LoadHandbrakePresets();
-		// 	ScannerManager.LoadMKVBackups();
-
-		// 	RefreshDashboard();
-
-		// 	await Task.WhenAll(tasks);
-		// }
-		// catch (Exception ex)
-		// {
-		// 	Console.WriteLine($"Something went wrong lmao {ex.Message}");
-		// }
-	}  
-
 	private void RefreshProgress(double progress)
 	{
 		InvokeAsync(StateHasChanged);
