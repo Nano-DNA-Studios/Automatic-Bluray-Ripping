@@ -5,6 +5,8 @@ FROM ubuntu:24.04
 ENV USERNAME=ABR
 ENV DEBIAN_FRONTEND=noninteractive
 
+ARG BUILD_CONFIG="Release"
+
 # Combine all compilation tools, runtime tools, and dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -45,7 +47,7 @@ RUN ldconfig
 WORKDIR /ABR
 
 # Copy your published .NET execution app items
-COPY ./Automatic-Bluray-Ripping/bin/Release/net8.0/linux-x64/publish/ .
+COPY ./Automatic-Bluray-Ripping/bin/${BUILD_CONFIG}/net8.0/linux-x64/publish/ .
 
 # Secure file permissions
 RUN chown -R ${USERNAME}:${USERNAME} /ABR

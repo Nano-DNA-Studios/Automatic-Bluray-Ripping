@@ -12,10 +12,10 @@ rm -rf Automatic-Bluray-Ripping/bin
 rm -rf Automatic-Bluray-Ripping/obj
 
 echo "--- STEP 2: Publishing for Linux-x64 ---"
-dotnet publish "$PROJECT_FILE" -c Release -r linux-x64 --self-contained true
+dotnet publish "$PROJECT_FILE" -c Debug -r linux-x64 --self-contained true
 
 echo "--- STEP 3: Building Local Docker Image ---"
-docker build -t "${IMAGE_NAME}:${TAG}" .
+docker build --build-arg BUILD_CONFIG="Debug" -t "${IMAGE_NAME}:${TAG}" .
 
 echo "--- STEP 4: Transferring and Loading Image Directly ---"
 docker save "${IMAGE_NAME}:${TAG}" | ssh "${TARGET_USER}@${TARGET_IP}" "docker load"
