@@ -1,5 +1,5 @@
-﻿using NanoDNA.AutomationResults;
-using NanoDNA.ProcessRunner;
+﻿using NanoDNA.ProcessRunner;
+using NanoDNA.AutomationResults;
 using System.Text.RegularExpressions;
 
 namespace Automatic_Bluray_Ripping
