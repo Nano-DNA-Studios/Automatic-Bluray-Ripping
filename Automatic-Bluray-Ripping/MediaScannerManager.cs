@@ -24,7 +24,7 @@ namespace Automatic_Bluray_Ripping
             VideoCategories = new Dictionary<string, VideoCategoryMetadata>();
         }
 
-        public int GetTotalVideos ()
+        public int GetTotalVideos()
         {
             int total = 0;
 
@@ -106,24 +106,39 @@ namespace Automatic_Bluray_Ripping
 
             Backups = new List<MKVBackup>();
 
+            Console.WriteLine("Checking if exists");
+
             if (!Directory.Exists(_settings.DefaultMKVDirectory))
                 return;
 
+            Console.WriteLine("Line does exist");
+
             if (UnremovedBackups.Count > 0)
             {
+                Console.WriteLine("Adding unremoved backups");
                 Backups.AddRange(UnremovedBackups);
                 UnremovedBackups.Clear();
             }
-               
+
+            Console.WriteLine("Going through directories");
+
             foreach (string dir in Directory.GetDirectories(_settings.DefaultMKVDirectory))
             {
                 MKVBackup backup = new MKVBackup(dir);
 
-                if (_mkvManager.DiscBackups.Any((d) => d.Name == backup.Name))
+                if (_mkvManager.DiscBackups.Any((d) => d.Name == backup.Name && d.IsConverting))
+                {
+                    Console.WriteLine("Skipping cause exist?");
                     continue;
+                }
 
                 if (Backups.Any((b) => b.Name == backup.Name))
+                {
+                    Console.WriteLine("Already exists");
                     continue;
+                }
+
+                Console.WriteLine("Computing the category");
 
                 ComputeCategories(backup);
 
@@ -131,6 +146,7 @@ namespace Automatic_Bluray_Ripping
             }
 
             IsScanning = false;
+            Backups.Sort((a, b) => a.Name.CompareTo(b.Name));
 
             Update();
         }
@@ -163,7 +179,7 @@ namespace Automatic_Bluray_Ripping
             backup.VideoCategories = videoCategories;
         }
 
-        private void ParseMetadata (VideoMetadata metadata)
+        private void ParseMetadata(VideoMetadata metadata)
         {
             if (!File.Exists(metadata.FilePath))
                 return;
@@ -225,7 +241,7 @@ namespace Automatic_Bluray_Ripping
             return args;
         }
 
-        public void AddToTranscodeQueue (MKVBackup backup)
+        public void AddToTranscodeQueue(MKVBackup backup)
         {
             string exportDir = Path.Combine(_settings.DefaultTranscodeDirectory, backup.Name);
 
