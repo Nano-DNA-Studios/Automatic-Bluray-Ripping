@@ -1,6 +1,6 @@
-﻿using NanoDNA.ProcessRunner;
+﻿using NanoDNA.AutomationResults;
+using NanoDNA.ProcessRunner;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 
 namespace Automatic_Bluray_Ripping
 {
@@ -67,41 +67,22 @@ namespace Automatic_Bluray_Ripping
 
             string arguments = $"-ss {timeOffset} -discard nokey -i \"{metadata.FilePath}\" -an -sn -frames:v 1 -f image2 -c:v mjpeg pipe:1";
 
-            ProcessStartInfo startInfo = new ProcessStartInfo
+            ProcessRunner process = new ProcessRunner("ffmpeg");
+
+            process.STDErrorReceived += (sender, args) =>
             {
-                FileName = "ffmpeg",
-                Arguments = arguments,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
+                if (args.Data == null)
+                    return;
+
+                Console.WriteLine(args.Data);
             };
 
-            using (Process process = new Process { StartInfo = startInfo })
-            {
-                process.Start();
+            //Add Cancelation token?
+            Result<int> result = await process.RunAsync(arguments);
 
-                Task<string> error = process.StandardError.ReadToEndAsync();
+            byte[] imageBytes = process.STDOutputBytes;
 
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    await process.StandardOutput.BaseStream.CopyToAsync(ms);
-                    await process.WaitForExitAsync();
-
-                    byte[] imageBytes = ms.ToArray();
-
-                    string errorOutput = await error;
-
-                    if (imageBytes.Length == 0 || process.ExitCode != 0)
-                    {
-                        Console.WriteLine($"Image Extraction failed for {metadata.Name}");
-                        Console.WriteLine(errorOutput);
-                        return;
-                    }
-
-                    metadata.ThumbnailBase64 = $"data:image/jpeg;base64,{Convert.ToBase64String(imageBytes)}";
-                }
-            }
+            metadata.ThumbnailBase64 = $"data:image/jpeg;base64,{Convert.ToBase64String(imageBytes)}";
         }
     }
 }

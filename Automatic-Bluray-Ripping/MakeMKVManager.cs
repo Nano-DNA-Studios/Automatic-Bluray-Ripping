@@ -214,8 +214,6 @@ namespace Automatic_Bluray_Ripping
                 if (string.IsNullOrEmpty(args.Data))
                     return;
 
-                Console.WriteLine(args.Data);
-
                 Match match = TitleInfoRegex.Match(args.Data);
 
                 if (!match.Success)
@@ -317,8 +315,6 @@ namespace Automatic_Bluray_Ripping
             {
                 if (string.IsNullOrEmpty(args.Data))
                     return;
-
-                Console.WriteLine(args.Data);
 
                 if (!isUnlocked)
                 {
